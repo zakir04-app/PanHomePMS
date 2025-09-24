@@ -9,7 +9,7 @@ import pandas as pd
 import io
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-secret-key') # Ye secret key aap Render par set kar sakte hain
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///panhome.db')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 db = SQLAlchemy(app)
@@ -127,6 +127,14 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return AppUser.query.get(int(user_id))
 
+with app.app_context():
+    db.create_all()
+    admin_user = AppUser.query.filter_by(username='admin').first()
+    if not admin_user:
+        new_admin = AppUser(username='admin', email='admin@panhome.com', mobile='N/A', password='admin123', role='admin')
+        db.session.add(new_admin)
+        db.session.commit()
+
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -138,7 +146,9 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        
         user = AppUser.query.filter_by(username=username).first()
+
         if user and user.check_password(password):
             login_user(user)
             return redirect(url_for('dashboard'))
@@ -812,3 +822,12 @@ def delete_user(user_id):
     
     return redirect(url_for('settings_dashboard'))
 
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        admin_user = AppUser.query.filter_by(username='admin').first()
+        if not admin_user:
+            new_admin = AppUser(username='admin', email='admin@panhome.com', mobile='N/A', password='admin123', role='admin')
+            db.session.add(new_admin)
+            db.session.commit()
+    app.run(debug=True)
