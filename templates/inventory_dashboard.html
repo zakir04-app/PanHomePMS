@@ -20,7 +20,7 @@
                     <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
                     <li><a href="{{ url_for('inventory_dashboard') }}" class="active">Inventory</a></li>
                     <li><a href="{{ url_for('maintenance_report') }}">Maintenance Report</a></li>
-                    <li><a href="#">AMCs Services</a></li>
+                    <li><a href="{{ url_for('amcs_dashboard') }}">AMCs Services</a></li>
                     <li><a href="{{ url_for('data_management') }}">Data</a></li>
                     <li><a href="#">Settings</a></li>
                     <li><a href="{{ url_for('logout') }}">Logout</a></li>
@@ -62,8 +62,8 @@
                 <div class="inventory-header">
                     <h3>Current Stock</h3>
                     <div class="inventory-actions">
-                        <a href="{{ url_for('incoming_inventory') }}" class="btn-primary">Add New Stock</a>
-                        <a href="{{ url_for('outgoing_inventory') }}" class="btn-primary">Distribute Stock</a>
+                        <a href="{{ url_for('incoming_inventory') }}" class="btn-3d">Add New Stock</a>
+                        <a href="{{ url_for('outgoing_inventory') }}" class="btn-3d">Distribute Stock</a>
                     </div>
                 </div>
                 <div class="table-scroll">

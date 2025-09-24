@@ -43,7 +43,7 @@
                 </div>
                 <div class="inventory-header">
                     <h3>All Contracts</h3>
-                    <a href="{{ url_for('add_amcs') }}" class="btn-primary">Add New Contract</a>
+                    <a href="{{ url_for('add_amcs') }}" class="btn-3d-primary">Add New Contract</a>
                 </div>
                 <div class="table-scroll">
                     <table>
@@ -70,16 +70,16 @@
                                 <td>{{ amc.remarks }}</td>
                                 <td>
                                     {% if amc.attached_file %}
-                                        <a href="{{ url_for('uploaded_file', filename=amc.attached_file) }}" target="_blank">View/Download File</a>
+                                        <a href="{{ url_for('uploaded_file', filename=amc.attached_file) }}" target="_blank">View File</a>
                                     {% else %}
                                         N/A
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="{{ url_for('edit_amcs', amc_id=amc.id) }}" class="btn-secondary">Edit</a>
-                                    <a href="{{ url_for('view_amcs', amc_id=amc.id) }}" class="btn-secondary">View</a>
+                                    <a href="{{ url_for('edit_amcs', amc_id=amc.id) }}" class="btn-3d-secondary">Edit</a>
+                                    <a href="{{ url_for('view_amcs', amc_id=amc.id) }}" class="btn-3d-secondary">View</a>
                                     {% if amc.attached_file %}
-                                        <a href="{{ url_for('download_amcs_file', amc_id=amc.id) }}" class="btn-secondary">Download</a>
+                                        <a href="{{ url_for('download_amcs_file', amc_id=amc.id) }}" class="btn-3d-secondary">Download</a>
                                     {% endif %}
                                 </td>
                             </tr>

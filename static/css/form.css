@@ -1,3 +1,95 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+.login-container {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 350px;
+}
+.logo-section {
+    margin-bottom: 30px;
+}
+.logo {
+    width: 150px;
+    margin-bottom: 10px;
+}
+h1 {
+    font-size: 1.5em;
+    color: #333;
+    margin: 0;
+}
+h2 {
+    font-size: 1em;
+    color: #555;
+    font-weight: normal;
+    margin: 5px 0 0;
+}
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.input-group {
+    text-align: left;
+}
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+    font-size: 0.9em;
+}
+.input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+.password-wrapper input {
+    padding-right: 40px;
+}
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #999;
+    user-select: none;
+}
+.login-btn {
+    padding: 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+.login-btn:hover {
+    background-color: #0056b3;
+}
+.forgot-password {
+    text-decoration: none;
+    color: #007bff;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
 .form-container {
     background: #fff;
     padding: 30px;
@@ -104,4 +196,123 @@
 .data-table-container a {
     color: #007bff;
     text-decoration: none;
+}
+.check-in-btn {
+    border: none;
+    background: none;
+    color: #007bff;
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: bold;
+    font-size: 1em;
+}
+.inventory-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.btn-primary, .btn-secondary {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+}
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+    border: 1px solid #007bff;
+}
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border: 1px solid #6c757d;
+}
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.inventory-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.inventory-header h3 {
+    margin: 0;
+}
+.main-table-container {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: 20px;
+}
+.summary-table {
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.btn-3d {
+    position: relative;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 5px 0 #3b873e;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    padding: 10px 20px;
+}
+
+.btn-3d:active {
+    top: 5px;
+    box-shadow: 0 0 0 #3b873e;
+}
+
+.btn-3d-primary {
+    background-color: #007bff;
+    box-shadow: 0 5px 0 #0056b3;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease-in-out;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    padding: 10px 20px;
+}
+
+.btn-3d-primary:active {
+    top: 5px;
+    box-shadow: 0 0 0 #0056b3;
+}
+
+.btn-3d-danger {
+    background-color: #dc3545;
+    box-shadow: 0 5px 0 #a02530;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease-in-out;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    padding: 10px 20px;
+}
+
+.btn-3d-danger:active {
+    top: 5px;
+    box-shadow: 0 0 0 #a02530;
 }

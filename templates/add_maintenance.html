@@ -98,7 +98,7 @@
                         <label for="attached_file">Attached File</label>
                         <input type="file" id="attached_file" name="attached_file">
                     </div>
-                    <button type="submit" class="submit-btn">Add Report</button>
+                    <button type="submit" class="btn-3d-primary">Add Report</button>
                 </form>
             </section>
         </main>
@@ -122,6 +122,10 @@
                 outsourceNameGroup.style.display = 'none';
             }
         }
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('status').dispatchEvent(new Event('change'));
+            toggleOutsourceInput();
+        });
     </script>
 </body>
 </html>

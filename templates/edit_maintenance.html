@@ -67,18 +67,18 @@
                             <option value="Closed" {% if report.status == 'Closed' %}selected{% endif %}>Closed</option>
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="closed_date_group" {% if report.status != 'Closed' %}style="display: none;"{% endif %}>
                         <label for="closed_date">Closed Date</label>
                         <input type="date" id="closed_date" name="closed_date" value="{{ report.closed_date }}">
                     </div>
                     <div class="form-group">
                         <label for="concern">Concern</label>
-                        <select id="concern" name="concern">
+                        <select id="concern" name="concern" onchange="toggleOutsourceInput()">
                             <option value="Pan Home Maintenance team" {% if report.concern == 'Pan Home Maintenance team' %}selected{% endif %}>Pan Home Maintenance team</option>
                             <option value="Outsource" {% if report.concern != 'Pan Home Maintenance team' %}selected{% endif %}>Outsource</option>
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="outsource_name_group" {% if report.concern == 'Pan Home Maintenance team' %}style="display: none;"{% endif %}>
                         <label for="outsource_name">Outsource Supplier Name</label>
                         <input type="text" id="outsource_name" name="outsource_name" value="{% if report.concern != 'Pan Home Maintenance team' %}{{ report.concern }}{% endif %}">
                     </div>
@@ -103,14 +103,14 @@
                             <p>Current file: <a href="{{ url_for('uploaded_file', filename=report.attached_file) }}" target="_blank">View File</a></p>
                         {% endif %}
                     </div>
-                    <button type="submit" class="submit-btn">Update Report</button>
+                    <button type="submit" class="btn-3d-primary">Update Report</button>
                 </form>
             </section>
         </main>
     </div>
     <script>
         document.getElementById('status').addEventListener('change', function() {
-            var closedDateGroup = document.getElementById('closed_date');
+            var closedDateGroup = document.getElementById('closed_date_group');
             if (this.value === 'Closed') {
                 closedDateGroup.style.display = 'flex';
             } else {
