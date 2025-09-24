@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PAN HOME PMS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
+                <h3>PAN HOME PMS</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{{ url_for('dashboard') }}" class="active">Dashboard</a></li>
+                    <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
+                    <li><a href="{{ url_for('inventory_dashboard') }}">Inventory</a></li>
+                    <li><a href="{{ url_for('maintenance_report') }}">Maintenance Report</a></li>
+                    <li><a href="{{ url_for('amcs_dashboard') }}">AMCs Services</a></li>
+                    <li><a href="{{ url_for('data_management') }}">Data</a></li>
+                    <li><a href="{{ url_for('settings_dashboard') }}">Settings</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="main-header">
+                <h2>Dashboard Overview</h2>
+            </header>
+            <section class="overview-cards">
+                <a href="{{ url_for('dashboard') }}" class="card-link">
+                    <div class="card">
+                        <h3>Total Employees</h3>
+                        <p>{{ total_employees }}</p>
+                    </div>
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="card-link">
+                    <div class="card">
+                        <h3>Vacant Spaces</h3>
+                        <p>{{ total_vacant_beds }}</p>
+                    </div>
+                </a>
+                <a href="{{ url_for('dashboard', status='Vacation') }}" class="card-link">
+                    <div class="card">
+                        <h3>Vacation Employees</h3>
+                        <p>{{ total_on_vacation }}</p>
+                    </div>
+                </a>
+                <a href="{{ url_for('dashboard', status='Resigned') }}" class="card-link">
+                    <div class="card">
+                        <h3>Resigned/Terminated</h3>
+                        <p>{{ total_resigned_terminated }}</p>
+                    </div>
+                </a>
+            </section>
+            
+            <header class="main-header">
+                <h2>Employee Data</h2>
+            </header>
+            <section class="data-table-container">
+                <form method="GET" action="{{ url_for('dashboard') }}" class="search-form">
+                    <input type="text" name="query" placeholder="Search by EMP ID or Name..." value="{{ query }}">
+                    <button type="submit">Search</button>
+                </form>
+                <div class="main-table-container">
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Accommodation Name</th>
+                                    <th>Room</th>
+                                    <th>EMP ID</th>
+                                    <th>NAME</th>
+                                    <th>Designation</th>
+                                    <th>Nationality</th>
+                                    <th>Mobile Number</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for emp in employees %}
+                                <tr>
+                                    <td>{{ emp.accommodation_name }}</td>
+                                    <td>
+                                        {% if emp.status in ['Ex-Employee', 'Shifted-out'] %}
+                                        N/A
+                                        {% else %}
+                                        {{ emp.room }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if emp.status in ['Ex-Employee', 'Shifted-out'] %}
+                                        <form method="POST" action="{{ url_for('check_in_staff', emp_id=emp.emp_id) }}" style="display:inline;">
+                                            <button type="submit" class="check-in-btn">{{ emp.emp_id }}</button>
+                                        </form>
+                                        {% else %}
+                                        <a href="{{ url_for('edit_employee', emp_id=emp.emp_id) }}">{{ emp.emp_id }}</a>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ emp.name }}</td>
+                                    <td>{{ emp.designation }}</td>
+                                    <td>{{ emp.nationality }}</td>
+                                    <td>{{ emp.mobile_number }}</td>
+                                    <td>{{ emp.status }}</td>
+                                    <td>{{ emp.check_out_date or emp.shift_out_date or '' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="summary-table">
+                        <h3>Summary (By Location)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Location</th>
+                                    <th>Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for loc in location_summary %}
+                                <tr>
+                                    <td><a href="{{ url_for('dashboard', location=loc[0]) }}">{{ loc[0] }}</a></td>
+                                    <td><a href="{{ url_for('dashboard', location=loc[0]) }}">{{ loc[1] }}</a></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

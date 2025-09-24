@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory - PAN HOME PMS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
+                <h3>PAN HOME PMS</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
+                    <li><a href="{{ url_for('inventory_dashboard') }}" class="active">Inventory</a></li>
+                    <li><a href="{{ url_for('maintenance_report') }}">Maintenance Report</a></li>
+                    <li><a href="#">AMCs Services</a></li>
+                    <li><a href="{{ url_for('data_management') }}">Data</a></li>
+                    <li><a href="#">Settings</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="main-header">
+                <h2>Inventory Dashboard</h2>
+            </header>
+            <section class="overview-cards">
+                <a href="{{ url_for('inventory_transactions', transaction_type='Incoming') }}" class="card-link">
+                    <div class="card">
+                        <h3>Total Received</h3>
+                        <p>{{ total_received_qty }}</p>
+                    </div>
+                </a>
+                <a href="{{ url_for('inventory_transactions', transaction_type='Outgoing') }}" class="card-link">
+                    <div class="card">
+                        <h3>Total Distributed</h3>
+                        <p>{{ total_distributed_qty }}</p>
+                    </div>
+                </a>
+                <div class="card">
+                    <h3>Current Stock</h3>
+                    <p>{{ current_stock }}</p>
+                </div>
+            </section>
+            <section class="form-container">
+                <div class="messages">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% for category, message in messages %}
+                          <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="inventory-header">
+                    <h3>Current Stock</h3>
+                    <div class="inventory-actions">
+                        <a href="{{ url_for('incoming_inventory') }}" class="btn-primary">Add New Stock</a>
+                        <a href="{{ url_for('outgoing_inventory') }}" class="btn-primary">Distribute Stock</a>
+                    </div>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.quantity }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

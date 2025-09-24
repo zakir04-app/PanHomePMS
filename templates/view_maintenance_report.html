@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Report - PAN HOME PMS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
+                <h3>PAN HOME PMS</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
+                    <li><a href="{{ url_for('inventory_dashboard') }}">Inventory</a></li>
+                    <li><a href="{{ url_for('maintenance_report') }}" class="active">Maintenance Report</a></li>
+                    <li><a href="#">AMCs Services</a></li>
+                    <li><a href="{{ url_for('data_management') }}">Data</a></li>
+                    <li><a href="#">Settings</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="main-header">
+                <h2>Maintenance Report Details</h2>
+            </header>
+            <section class="form-container">
+                <div class="report-details">
+                    <p><strong>Block:</strong> {{ report.block }}</p>
+                    <p><strong>Section:</strong> {{ report.section }}</p>
+                    <p><strong>Report Date:</strong> {{ report.report_date }}</p>
+                    <p><strong>Details of Work:</strong> {{ report.details }}</p>
+                    <p><strong>Status:</strong> {{ report.status }}</p>
+                    <p><strong>Closed Date:</strong> {{ report.closed_date or 'N/A' }}</p>
+                    <p><strong>Concern:</strong> {{ report.concern }}</p>
+                    <p><strong>Risk:</strong> {{ report.risk }}</p>
+                    <p><strong>Remarks:</strong> {{ report.remarks or 'N/A' }}</p>
+                    <p><strong>Attached File:</strong> 
+                        {% if report.attached_file %}
+                            <a href="{{ url_for('uploaded_file', filename=report.attached_file) }}" target="_blank">View/Download File</a>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="form-actions">
+                    <a href="{{ url_for('edit_maintenance', report_id=report.id) }}" class="btn-primary">Edit Report</a>
+                    <a href="{{ url_for('maintenance_report') }}" class="btn-secondary">Back to Reports</a>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

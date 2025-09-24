@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outgoing Stock - PAN HOME PMS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
+                <h3>PAN HOME PMS</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
+                    <li><a href="{{ url_for('inventory_dashboard') }}" class="active">Inventory</a></li>
+                    <li><a href="{{ url_for('maintenance_report') }}">Maintenance Report</a></li>
+                    <li><a href="#">AMCs Services</a></li>
+                    <li><a href="{{ url_for('data_management') }}">Data</a></li>
+                    <li><a href="#">Settings</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="main-header">
+                <h2>Outgoing Stock</h2>
+            </header>
+            <section class="form-container">
+                <div class="messages">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% for category, message in messages %}
+                          <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+                </div>
+                <form method="POST" action="{{ url_for('outgoing_inventory') }}" class="staff-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" name="date" value="{{ today }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emp_id">EMP ID</label>
+                        <input type="text" id="emp_id" name="emp_id" list="employee_ids" oninput="getEmployeeDetails()" required>
+                        <datalist id="employee_ids">
+                            {% for emp in employees %}
+                            <option value="{{ emp.emp_id }}">
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">NAME</label>
+                        <input type="text" id="name" name="name" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="room_number">Room Number</label>
+                        <input type="text" id="room_number" name="room_number" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="designation">Designation</label>
+                        <input type="text" id="designation" name="designation" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Location</label>
+                        <input type="text" id="location" name="location" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="item_description">Item Description</label>
+                        <select id="item_description" name="item_description" required>
+                            {% for item in items %}
+                            <option value="{{ item.name }}">{{ item.name }} (Stock: {{ item.quantity }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="quantity">Quantity</label>
+                        <input type="number" id="quantity" name="quantity" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="attached_file">Attached File (Signed Paper)</label>
+                        <input type="file" id="attached_file" name="attached_file">
+                    </div>
+                    <button type="submit" class="submit-btn">Distribute Stock</button>
+                </form>
+            </section>
+        </main>
+    </div>
+    <script>
+        function getEmployeeDetails() {
+            var empId = document.getElementById('emp_id').value;
+            if (empId) {
+                fetch(`/get_employee_details/${empId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('name').value = data.name || 'N/A';
+                    document.getElementById('room_number').value = data.room || 'N/A';
+                    document.getElementById('designation').value = data.designation || 'N/A';
+                    document.getElementById('location').value = data.location || 'N/A';
+                });
+            }
+        }
+    </script>
+</body>
+</html>

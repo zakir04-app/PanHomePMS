@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Reports - PAN HOME PMS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
+                <h3>PAN HOME PMS</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
+                    <li><a href="{{ url_for('inventory_dashboard') }}">Inventory</a></li>
+                    <li><a href="{{ url_for('maintenance_report') }}" class="active">Maintenance Report</a></li>
+                    <li><a href="#">AMCs Services</a></li>
+                    <li><a href="{{ url_for('data_management') }}">Data</a></li>
+                    <li><a href="#">Settings</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="main-header">
+                <h2>Maintenance Reports</h2>
+            </header>
+            <section class="form-container">
+                <div class="messages">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% for category, message in messages %}
+                          <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="inventory-header">
+                    <h3>All Reports</h3>
+                    <a href="{{ url_for('add_maintenance') }}" class="btn-primary">Add New Report</a>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th>Block</th>
+                                <th>Section</th>
+                                <th>Report Date</th>
+                                <th>Details</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ report.block }}</td>
+                                <td>{{ report.section }}</td>
+                                <td>{{ report.report_date }}</td>
+                                <td>{{ report.details }}</td>
+                                <td>{{ report.status }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_maintenance', report_id=report.id) }}" class="btn-secondary">Edit</a>
+                                    <a href="{{ url_for('view_maintenance_report', report_id=report.id) }}" class="btn-secondary">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

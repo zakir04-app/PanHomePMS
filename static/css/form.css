@@ -1,0 +1,107 @@
+.form-container {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.form-container h3 {
+    margin-top: 0;
+    color: #333;
+}
+.staff-form, .excel-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-top: 20px;
+}
+.excel-form {
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+.form-group label {
+    font-size: 0.9em;
+    color: #555;
+    margin-bottom: 5px;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+}
+.form-group textarea {
+    resize: vertical;
+}
+.submit-btn {
+    grid-column: span 2;
+    padding: 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+.submit-btn:hover {
+    background-color: #0056b3;
+}
+.messages {
+    margin-bottom: 20px;
+}
+.alert {
+    padding: 15px;
+    border-radius: 5px;
+    color: white;
+    margin-bottom: 10px;
+}
+.alert-success {
+    background-color: #28a745;
+}
+.alert-danger {
+    background-color: #dc3545;
+}
+.search-form {
+    display: flex;
+    margin-bottom: 20px;
+}
+.search-form input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px 0 0 5px;
+}
+.search-form button {
+    padding: 10px 15px;
+    border: 1px solid #007bff;
+    background-color: #007bff;
+    color: white;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+}
+.data-table-container table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.data-table-container th, .data-table-container td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+.data-table-container th {
+    background-color: #f2f2f2;
+}
+.data-table-container tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+.data-table-container a {
+    color: #007bff;
+    text-decoration: none;
+}

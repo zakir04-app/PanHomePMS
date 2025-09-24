@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMCs Services - PAN HOME PMS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
+                <h3>PAN HOME PMS</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
+                    <li><a href="{{ url_for('inventory_dashboard') }}">Inventory</a></li>
+                    <li><a href="{{ url_for('maintenance_report') }}">Maintenance Report</a></li>
+                    <li><a href="{{ url_for('amcs_dashboard') }}" class="active">AMCs Services</a></li>
+                    <li><a href="{{ url_for('data_management') }}">Data</a></li>
+                    <li><a href="#">Settings</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="main-header">
+                <h2>AMCs Services</h2>
+            </header>
+            <section class="form-container">
+                <div class="messages">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% for category, message in messages %}
+                          <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="inventory-header">
+                    <h3>All Contracts</h3>
+                    <a href="{{ url_for('add_amcs') }}" class="btn-primary">Add New Contract</a>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th>Vendor/Supplier Name</th>
+                                <th>Inspection/Service Date</th>
+                                <th>Expiry Date</th>
+                                <th>Type</th>
+                                <th>Remarks</th>
+                                <th>Attached File</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for amc in amcs_list %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ amc.supplier_name }}</td>
+                                <td>{{ amc.date }}</td>
+                                <td>{{ amc.end_date }}</td>
+                                <td>{{ amc.type }}</td>
+                                <td>{{ amc.remarks }}</td>
+                                <td>
+                                    {% if amc.attached_file %}
+                                        <a href="{{ url_for('uploaded_file', filename=amc.attached_file) }}" target="_blank">View/Download File</a>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('edit_amcs', amc_id=amc.id) }}" class="btn-secondary">Edit</a>
+                                    <a href="{{ url_for('view_amcs', amc_id=amc.id) }}" class="btn-secondary">View</a>
+                                    {% if amc.attached_file %}
+                                        <a href="{{ url_for('download_amcs_file', amc_id=amc.id) }}" class="btn-secondary">Download</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

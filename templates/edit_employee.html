@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Employee - PAN HOME PMS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
+                <h3>PAN HOME PMS</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
+                    <li><a href="{{ url_for('inventory_dashboard') }}">Inventory</a></li>
+                    <li><a href="{{ url_for('maintenance_report') }}">Maintenance Report</a></li>
+                    <li><a href="#">AMCs Services</a></li>
+                    <li><a href="{{ url_for('data_management') }}">Data</a></li>
+                    <li><a href="#">Settings</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="main-header">
+                <h2>Edit Employee: {{ employee.name }}</h2>
+            </header>
+            <section class="form-container">
+                <div class="messages">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% for category, message in messages %}
+                          <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+                </div>
+                <form method="POST" action="{{ url_for('edit_employee', emp_id=employee.emp_id) }}" class="staff-form">
+                    <div class="form-group">
+                        <label for="accommodation_name">Accommodation Name</label>
+                        <input type="text" id="accommodation_name" name="accommodation_name" value="{{ employee.accommodation_name }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="room">Room</label>
+                        <input type="text" id="room" name="room" value="{{ employee.room }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="name">NAME</label>
+                        <input type="text" id="name" name="name" value="{{ employee.name }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="designation">Designation</label>
+                        <input type="text" id="designation" name="designation" value="{{ employee.designation }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="nationality">Nationality</label>
+                        <select id="nationality" name="nationality">
+                            {% for nationality in nationalities %}
+                            <option value="{{ nationality }}" {% if employee.nationality == nationality %}selected{% endif %}>{{ nationality }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="mobile_number">Mobile # (+971-050-1234567)</label>
+                        <input type="text" id="mobile_number" name="mobile_number" value="{{ employee.mobile_number }}" placeholder="+971-050-1234567">
+                    </div>
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status" onchange="toggleOtherStatus()">
+                            {% for status in statuses %}
+                            <option value="{{ status }}" {% if employee.status == status %}selected{% endif %}>{{ status }}</option>
+                            {% endfor %}
+                            <option value="Other" {% if employee.status not in statuses and employee.status not in ['Checked-out', 'Shifted-out'] %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="other_status_group" style="display: none;">
+                        <label for="other_status">Specify Other Status</label>
+                        <input type="text" id="other_status" name="other_status" value="{% if employee.status not in statuses and employee.status not in ['Checked-out', 'Shifted-out'] %}{{ employee.status }}{% endif %}">
+                    </div>
+                    <div class="form-group">
+                        <label for="food_variety">Food Variety</label>
+                        <select id="food_variety" name="food_variety">
+                            {% for food in food_varieties %}
+                            <option value="{{ food }}" {% if employee.food_variety == food %}selected{% endif %}>{{ food }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="meal_time">Meal Time</label>
+                        <select id="meal_time" name="meal_time">
+                            {% for time in meal_times %}
+                            <option value="{{ time }}" {% if employee.meal_time == time %}selected{% endif %}>{{ time }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Location</label>
+                        <input type="text" id="location" name="location" value="{{ employee.location }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="remarks">Remarks</label>
+                        <textarea id="remarks" name="remarks">{{ employee.remarks }}</textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Update Employee</button>
+                    {% if employee.status not in ['Ex-Employee', 'Shifted-out'] %}
+                    <div class="form-group">
+                        <button type="submit" name="checkout_btn" onclick="return confirmCheckout()" class="submit-btn checkout-btn">Check-out Staff</button>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" name="shiftout_btn" onclick="return confirmShiftout()" class="submit-btn shiftout-btn">Shift-out Staff</button>
+                    </div>
+                    {% endif %}
+                </form>
+            </section>
+        </main>
+    </div>
+    <script>
+        function toggleOtherStatus() {
+            var statusDropdown = document.getElementById('status');
+            var otherStatusGroup = document.getElementById('other_status_group');
+            if (statusDropdown.value === 'Other') {
+                otherStatusGroup.style.display = 'flex';
+            } else {
+                otherStatusGroup.style.display = 'none';
+            }
+        }
+        function confirmCheckout() {
+            return confirm("Are you sure you want to check out this staff? Their room will become vacant.");
+        }
+        function confirmShiftout() {
+            return confirm("Are you sure you want to shift out this staff? Their room will become vacant.");
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleOtherStatus();
+        });
+    </script>
+</body>
+</html>

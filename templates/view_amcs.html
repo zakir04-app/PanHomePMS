@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View AMCs Service - PAN HOME PMS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
+                <h3>PAN HOME PMS</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
+                    <li><a href="{{ url_for('inventory_dashboard') }}">Inventory</a></li>
+                    <li><a href="{{ url_for('maintenance_report') }}">Maintenance Report</a></li>
+                    <li><a href="{{ url_for('amcs_dashboard') }}" class="active">AMCs Services</a></li>
+                    <li><a href="{{ url_for('data_management') }}">Data</a></li>
+                    <li><a href="#">Settings</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="main-header">
+                <h2>View AMCs Service</h2>
+            </header>
+            <section class="form-container">
+                <div class="report-details">
+                    <p><strong>Service ID:</strong> {{ amc.service_id }}</p>
+                    <p><strong>Inspection/Service Date:</strong> {{ amc.date }}</p>
+                    <p><strong>Type:</strong> {{ amc.type }}</p>
+                    <p><strong>Supplier Name:</strong> {{ amc.supplier_name }}</p>
+                    <p><strong>Start Date:</strong> {{ amc.start_date }}</p>
+                    <p><strong>Expiry Date:</strong> {{ amc.end_date }}</p>
+                    <p><strong>Remarks:</strong> {{ amc.remarks }}</p>
+                    <p><strong>Attached File:</strong>
+                        {% if amc.attached_file %}
+                            <a href="{{ url_for('uploaded_file', filename=amc.attached_file) }}" target="_blank">View File</a>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="form-actions">
+                    <a href="{{ url_for('edit_amcs', amc_id=amc.id) }}" class="btn-primary">Edit Service</a>
+                    <a href="{{ url_for('amcs_dashboard') }}" class="btn-secondary">Back to List</a>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

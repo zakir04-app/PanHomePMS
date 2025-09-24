@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ transaction_type }} Transactions - PAN HOME PMS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
+                <h3>PAN HOME PMS</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
+                    <li><a href="{{ url_for('inventory_dashboard') }}" class="active">Inventory</a></li>
+                    <li><a href="#">Maintenance Report</a></li>
+                    <li><a href="#">AMCs Services</a></li>
+                    <li><a href="{{ url_for('data_management') }}">Data</a></li>
+                    <li><a href="#">Settings</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="main-header">
+                <h2>{{ transaction_type }} Transactions</h2>
+            </header>
+            <section class="form-container">
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Item Name</th>
+                                <th>Quantity</th>
+                                <th>Type</th>
+                                {% if transaction_type == 'Incoming' %}
+                                <th>Supplier Name</th>
+                                <th>LPO Number</th>
+                                {% else %}
+                                <th>EMP ID</th>
+                                <th>Room Number</th>
+                                {% endif %}
+                                <th>File</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.date }}</td>
+                                <td>{{ transaction.item_name }}</td>
+                                <td>{{ transaction.quantity }}</td>
+                                <td>{{ transaction.type }}</td>
+                                {% if transaction_type == 'Incoming' %}
+                                <td>{{ transaction.supplier_name }}</td>
+                                <td>{{ transaction.lpo_number }}</td>
+                                {% else %}
+                                <td>{{ transaction.emp_id }}</td>
+                                <td>{{ transaction.room_number }}</td>
+                                {% endif %}
+                                <td>
+                                    {% if transaction.file_path %}
+                                    <a href="{{ url_for('uploaded_file', filename=transaction.file_path) }}" target="_blank">View File</a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
