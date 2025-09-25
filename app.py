@@ -159,7 +159,7 @@ def forgot_password():
 def dashboard():
     status_filter = request.args.get('status')
     location_filter = request.args.get('location')
-    query = request.args.get('query', '')
+    query = request.args.get('query', '').strip()
     active_statuses = ['Active', 'Vacation', 'On Leave', 'Resigned', 'Terminated']
     
     total_employees = Employee.query.filter(Employee.status.in_(active_statuses)).count()
@@ -171,24 +171,26 @@ def dashboard():
         Employee.status.in_(active_statuses)
     ).group_by(Employee.location).all()
     
-    employees_query = Employee.query.filter(Employee.status != 'Ex-Employee', Employee.status != 'Shifted-out')
+    employees_query = Employee.query
+
+    if query:
+        search_filter = or_(Employee.emp_id.contains(query), Employee.name.contains(query))
+        employees_query = employees_query.filter(search_filter)
+    else:
+        employees_query = employees_query.filter(Employee.status != 'Ex-Employee', Employee.status != 'Shifted-out')
 
     if status_filter:
         employees_query = employees_query.filter_by(status=status_filter)
     if location_filter:
         employees_query = employees_query.filter_by(location=location_filter)
-    if query:
-        search_filter = or_(
-            Employee.emp_id.contains(query), 
-            Employee.name.contains(query),
-            Employee.room.contains(query)
-        )
-        employees_query = employees_query.filter(search_filter)
         
-    sort_order = { 'Vacant': -1, 'Active': 0, 'On Leave': 1, 'Vacation': 2, 'Resigned': 3, 'Terminated': 4 }
+    sort_order = { 
+        'Vacant': -1, 'Active': 0, 'On Leave': 1, 'Vacation': 2, 
+        'Resigned': 3, 'Terminated': 4, 'Shifted-out': 98, 'Ex-Employee': 99
+    }
     employees = sorted(
         employees_query.all(),
-        key=lambda item: (sort_order.get(item.status, 99), item.room, item.name)
+        key=lambda item: (sort_order.get(item.status, 100), item.name)
     )
 
     return render_template('dashboard.html', 
@@ -200,44 +202,63 @@ def dashboard():
 @login_required
 def edit_employee(emp_id):
     employee = Employee.query.filter_by(emp_id=emp_id).first_or_404()
-    is_vacant_record = employee.status == 'Vacant'
-    nationalities = ['Afghan', 'Algerian', 'American', 'Andorran', 'Angolan', 'Antiguans', 'Argentinean', 'Armenian', 'Australian', 'Austrian', 'Azerbaijani', 'Bahamian', 'Bahraini', 'Bangladeshi', 'Barbadian', 'Barbudans', 'Batswana', 'Belarusian', 'Belgian', 'Belizean', 'Beninese', 'Bhutanese', 'Bolivian', 'Bosnian', 'Brazilian', 'British', 'Bruneian', 'Bulgarian', 'Burkinabe', 'Burmese', 'Burundian', 'Cambodian', 'Cameroonian', 'Canadian', 'Cape Verdean', 'Central African', 'Chadian', 'Chilean', 'Chinese', 'Colombian', 'Comoran',  'Congolese', 'Costa Rican', 'Croatian', 'Cuban', 'Cypriot', 'Czech', 'Danish', 'Djibouti', 'Dominican', 'Dutch', 'East Timorese', 'Ecuadorean', 'Egyptian', 'Emirian', 'Equatorial Guinean', 'Eritrean', 'Estonian', 'Ethiopian', 'Fijian', 'Filipino', 'Finnish', 'French', 'Gabonese', 'Gambian', 'Georgian', 'German', 'Ghanaian', 'Greek', 'Grenadian', 'Guatemalan', 'Guinea-Bissauan', 'Guinean', 'Guyanese', 'Haitian', 'Herzegovinian', 'Honduran', 'Hungarian', 'I-Kiribati', 'Icelander', 'Indian', 'Indonesian', 'Iranian', 'Iraqi', 'Irish', 'Israeli', 'Italian', 'Ivorian', 'Jamaican', 'Japanese', 'Jordanian', 'Kazakhstani', 'Kenyan', 'Kittian and Nevisian', 'Kuwaiti', 'Kyrgyz', 'Laotian', 'Latvian', 'Lebanese', 'Liberian', 'Libyan', 'Liechtensteiner', 'Lithuanian', 'Luxembourger', 'Macedonian', 'Malagasy', 'Malawian', 'Malaysian', 'Maldivan', 'Malian', 'Maltese', 'Marshallese', 'Mauritanian', 'Mauritian', 'Mexican', 'Micronesian', 'Moldovan', 'Monacan', 'Mongolian', 'Moroccan', 'Mosotho', 'Motswana', 'Mozambican', 'Namibian', 'Nauruan', 'Nepalese', 'New Zealander', 'Nicaraguan', 'Nigerian', 'Nigerien', 'North Korean', 'Northern Irish', 'Norwegian', 'Omani', 'Pakistani', 'Palauan', 'Panamanian', 'Papua New Guinean', 'Paraguayan', 'Peruvian', 'Polish', 'Portuguese', 'Qatari', 'Romanian', 'Russian', 'Rwandan', 'Saint Lucian', 'Salvadoran', 'Samoan', 'San Marinese', 'Sao Tomean', 'Saudi', 'Scottish', 'Senegalese', 'Serbian', 'Seychellois', 'Sierra Leonean', 'Singaporean', 'Slovakian', 'Slovenian', 'Solomon Islander', 'Somali', 'South African', 'South Korean', 'Spanish', 'Sri Lankan', 'Sudanese', 'Surinamer', 'Swazi', 'Swedish', 'Swiss', 'Syrian', 'Taiwanese', 'Tajik', 'Tanzanian', 'Thai', 'Togolese', 'Tongan', 'Trinidadian or Tobagonian', 'Tunisian', 'Turkish', 'Tuvaluan', 'Ugandan', 'Ukrainian', 'Uruguayan', 'Uzbekistani', 'Venezuelan', 'Vietnamese', 'Welsh', 'Yemenite', 'Zambian', 'Zimbabwean']
-    food_varieties = ['Non-Veg Rice', 'Veg Rice', 'Non-Veg Chapati', 'Veg Chapati', 'Arabic', 'Veg/Non-Veg Roti']
-    meal_times = ['Lunch', 'Dinner']
-    statuses = ['Active', 'Vacation', 'Resigned', 'Terminated', 'Other']
 
     if request.method == 'POST':
         try:
             if 'checkout_btn' in request.form or 'shiftout_btn' in request.form:
-                new_status = 'Ex-Employee' if 'checkout_btn' in request.form else 'Shifted-out'
-                employee.status = new_status
-                if new_status == 'Ex-Employee':
+                original_room = employee.room
+                original_acc = employee.accommodation_name
+                original_loc = employee.location
+
+                if 'checkout_btn' in request.form:
+                    employee.status = 'Ex-Employee'
                     employee.check_out_date = datetime.now().strftime('%Y-%m-%d')
                 else:
+                    employee.status = 'Shifted-out'
                     employee.shift_out_date = datetime.now().strftime('%Y-%m-%d')
                 
-                new_vacant_id = f"VACANT_{employee.room}_{int(datetime.now().timestamp())}"
+                employee.room = None
+                employee.accommodation_name = None
+                employee.location = None
+                
+                vacant_count = Employee.query.filter(Employee.room == original_room, Employee.status == 'Vacant').count()
+                new_vacant_id = f"{original_room}-Vacant-{vacant_count + 1}"
+                
                 vacant_bed = Employee(
                     emp_id=new_vacant_id, status='Vacant', name='-',
-                    accommodation_name=employee.accommodation_name,
-                    room=employee.room, location=employee.location,
+                    accommodation_name=original_acc,
+                    room=original_room, location=original_loc,
                     designation='-', nationality='-', mobile_number='-',
                     food_variety='-', meal_time='-', remarks='Bedspace'
                 )
                 db.session.add(vacant_bed)
             else:
-                employee.accommodation_name = request.form['accommodation_name']
-                employee.room = request.form['room']
+                new_vacant_bed_id = request.form.get('vacant_bed_id')
+                if new_vacant_bed_id:
+                    new_bed = db.session.get(Employee, int(new_vacant_bed_id))
+                    if new_bed and new_bed.status == 'Vacant':
+                        old_vacant_id = f"{employee.room}-Vacant-{Employee.query.filter_by(room=employee.room, status='Vacant').count() + 1}"
+                        old_bed_as_vacant = Employee(
+                            emp_id=old_vacant_id, status='Vacant', name='-',
+                            accommodation_name=employee.accommodation_name, room=employee.room,
+                            location=employee.location, designation='-', nationality='-',
+                            mobile_number='-', food_variety='-', meal_time='-', remarks='Bedspace'
+                        )
+                        db.session.add(old_bed_as_vacant)
+                        
+                        employee.accommodation_name = new_bed.accommodation_name
+                        employee.room = new_bed.room
+                        employee.location = new_bed.location
+                        
+                        db.session.delete(new_bed)
+
                 employee.name = request.form['name']
                 employee.designation = request.form['designation']
                 employee.nationality = request.form['nationality']
                 employee.mobile_number = request.form['mobile_number']
                 employee.status = request.form['status']
-                if employee.status == 'Other':
-                    employee.status = request.form['other_status']
                 employee.food_variety = request.form['food_variety']
                 employee.meal_time = request.form['meal_time']
-                employee.location = request.form['location']
                 employee.remarks = request.form['remarks']
             
             db.session.commit()
@@ -247,10 +268,21 @@ def edit_employee(emp_id):
             db.session.rollback()
             flash(f'Error updating data: {e}', 'danger')
 
+    accommodations = Camp.query.order_by(Camp.name).all()
+    vacant_beds_query = Employee.query.filter_by(status='Vacant').order_by(Employee.accommodation_name, Employee.room).all()
+    vacant_beds_list = [{'id': bed.id, 'accommodation_name': bed.accommodation_name, 'room': bed.room, 'emp_id': bed.emp_id} for bed in vacant_beds_query]
+    
+    nationalities = ['Afghan', 'Algerian', 'American', 'Andorran', 'Angolan', 'Antiguans', 'Argentinean', 'Armenian', 'Australian', 'Austrian', 'Azerbaijani', 'Bahamian', 'Bahraini', 'Bangladeshi', 'Barbadian', 'Barbudans', 'Batswana', 'Belarusian', 'Belgian', 'Belizean', 'Beninese', 'Bhutanese', 'Bolivian', 'Bosnian', 'Brazilian', 'British', 'Bruneian', 'Bulgarian', 'Burkinabe', 'Burmese', 'Burundian', 'Cambodian', 'Cameroonian', 'Canadian', 'Cape Verdean', 'Central African', 'Chadian', 'Chilean', 'Chinese', 'Colombian', 'Comoran',  'Congolese', 'Costa Rican', 'Croatian', 'Cuban', 'Cypriot', 'Czech', 'Danish', 'Djibouti', 'Dominican', 'Dutch', 'East Timorese', 'Ecuadorean', 'Egyptian', 'Emirian', 'Equatorial Guinean', 'Eritrean', 'Estonian', 'Ethiopian', 'Fijian', 'Filipino', 'Finnish', 'French', 'Gabonese', 'Gambian', 'Georgian', 'German', 'Ghanaian', 'Greek', 'Grenadian', 'Guatemalan', 'Guinea-Bissauan', 'Guinean', 'Guyanese', 'Haitian', 'Herzegovinian', 'Honduran', 'Hungarian', 'I-Kiribati', 'Icelander', 'Indian', 'Indonesian', 'Iranian', 'Iraqi', 'Irish', 'Israeli', 'Italian', 'Ivorian', 'Jamaican', 'Japanese', 'Jordanian', 'Kazakhstani', 'Kenyan', 'Kittian and Nevisian', 'Kuwaiti', 'Kyrgyz', 'Laotian', 'Latvian', 'Lebanese', 'Liberian', 'Libyan', 'Liechtensteiner', 'Lithuanian', 'Luxembourger', 'Macedonian', 'Malagasy', 'Malawian', 'Malaysian', 'Maldivan', 'Malian', 'Maltese', 'Marshallese', 'Mauritanian', 'Mauritian', 'Mexican', 'Micronesian', 'Moldovan', 'Monacan', 'Mongolian', 'Moroccan', 'Mosotho', 'Motswana', 'Mozambican', 'Namibian', 'Nauruan', 'Nepalese', 'New Zealander', 'Nicaraguan', 'Nigerian', 'Nigerien', 'North Korean', 'Northern Irish', 'Norwegian', 'Omani', 'Pakistani', 'Palauan', 'Panamanian', 'Papua New Guinean', 'Paraguayan', 'Peruvian', 'Polish', 'Portuguese', 'Qatari', 'Romanian', 'Russian', 'Rwandan', 'Saint Lucian', 'Salvadoran', 'Samoan', 'San Marinese', 'Sao Tomean', 'Saudi', 'Scottish', 'Senegalese', 'Serbian', 'Seychellois', 'Sierra Leonean', 'Singaporean', 'Slovakian', 'Slovenian', 'Solomon Islander', 'Somali', 'South African', 'South Korean', 'Spanish', 'Sri Lankan', 'Sudanese', 'Surinamer', 'Swazi', 'Swedish', 'Swiss', 'Syrian', 'Taiwanese', 'Tajik', 'Tanzanian', 'Thai', 'Togolese', 'Tongan', 'Trinidadian or Tobagonian', 'Tunisian', 'Turkish', 'Tuvaluan', 'Ugandan', 'Ukrainian', 'Uruguayan', 'Uzbekistani', 'Venezuelan', 'Vietnamese', 'Welsh', 'Yemenite', 'Zambian', 'Zimbabwean']
+    food_varieties = ['Non-Veg Rice', 'Veg Rice', 'Non-Veg Chapati', 'Veg Chapati', 'Arabic', 'Veg/Non-Veg Roti']
+    meal_times = ['Lunch', 'Dinner']
+    statuses = ['Active', 'Vacation', 'Resigned', 'Terminated', 'Other']
+    is_vacant_record = employee.status == 'Vacant'
+
     return render_template('edit_employee.html', 
                            employee=employee, is_vacant_record=is_vacant_record,
                            nationalities=nationalities, food_varieties=food_varieties,
-                           meal_times=meal_times, statuses=statuses)
+                           meal_times=meal_times, statuses=statuses,
+                           accommodations=accommodations, vacant_beds=vacant_beds_list)
 
 @app.route('/add_staff', methods=['GET', 'POST'])
 @login_required
@@ -281,7 +313,7 @@ def add_staff():
                         if status.lower() == 'vacant':
                             vacant_counters.setdefault(room_number, 0)
                             vacant_counters[room_number] += 1
-                            emp_id = f"VACANT_{room_number}_{vacant_counters[room_number]}"
+                            emp_id = f"{room_number}-Vacant-{vacant_counters[room_number]}"
                         bed = Employee(
                             accommodation_name=accommodation_name, room=room_number,
                             status=status, emp_id=emp_id, name=row.get('NAME', '-'),
@@ -624,16 +656,13 @@ def change_appearance():
     theme = request.form.get('theme')
     font_style = request.form.get('font_style')
     font_size = request.form.get('font_size')
-    
     user = db.session.get(AppUser, current_user.id)
-    
     if theme in ['default', 'dark', 'light', 'blue', 'ocean', 'skyblue', 'darkgreen', 'darkgold']:
         user.theme = theme
     if font_style in ['inter', 'poppins', 'roboto-slab']:
         user.font_style = font_style
     if font_size in ['small', 'normal', 'large']:
         user.font_size = font_size
-        
     db.session.commit()
     flash('Appearance settings updated successfully!', 'success')
     return redirect(url_for('settings_dashboard'))
@@ -700,6 +729,33 @@ def delete_user(user_id):
     else:
         flash("User not found.", "danger")
     return redirect(url_for('settings_dashboard'))
+@app.route('/init-db/<string:secret_key>')
+def init_db(secret_key):
+    # Simple secret key to prevent accidental runs
+    if secret_key != 'CREATE-DATABASE-NOW':
+        return "Invalid secret key.", 403
+
+    try:
+        with app.app_context():
+            db.create_all()
+            
+            # Create the default admin user if it doesn't exist
+            if not AppUser.query.filter_by(username='admin').first():
+                new_admin = AppUser(
+                    username='admin', 
+                    email='admin@example.com', 
+                    mobile='N/A', 
+                    password='admin123', 
+                    role='admin'
+                )
+                db.session.add(new_admin)
+                db.session.commit()
+                return "Database initialized and admin user created successfully!"
+            else:
+                return "Database tables already exist, and admin user is already present."
+
+    except Exception as e:
+        return f"An error occurred: {e}"
 
 if __name__ == '__main__':
     with app.app_context():
