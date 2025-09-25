@@ -1,22 +1,25 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, send_file
+import io
+from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from sqlalchemy import func, or_
-from datetime import datetime
 import pandas as pd
-import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///panhome.db')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
+# --- Models ---
 class AppUser(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
@@ -63,12 +66,6 @@ class Camp(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     location = db.Column(db.String(100))
 
-class Room(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    camp_id = db.Column(db.Integer, db.ForeignKey('camp.id'))
-    room_number = db.Column(db.String(50), unique=True, nullable=False)
-    status = db.Column(db.String(50), default='Vacant')
-
 class InventoryItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
@@ -114,7 +111,8 @@ class AMCsService(db.Model):
     duration = db.Column(db.String(50))
     remaining_days = db.Column(db.Integer)
     attached_file = db.Column(db.String(255))
-    
+
+# --- Login Manager Setup ---
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -123,6 +121,7 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return db.session.get(AppUser, int(user_id))
 
+# --- Main Routes ---
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -149,11 +148,6 @@ def logout():
     flash("You have been logged out successfully.", "success")
     return redirect(url_for('login'))
 
-@app.route('/forgot_password')
-def forgot_password():
-    flash("You are not allowed to change or create the password. Please contact your IT administrator for help.", "info")
-    return redirect(url_for('login'))
-
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -172,25 +166,21 @@ def dashboard():
     ).group_by(Employee.location).all()
     
     employees_query = Employee.query
-
     if query:
         search_filter = or_(Employee.emp_id.contains(query), Employee.name.contains(query))
         employees_query = employees_query.filter(search_filter)
     else:
-        employees_query = employees_query.filter(Employee.status != 'Ex-Employee', Employee.status != 'Shifted-out')
+        employees_query = employees_query.filter(Employee.status.notin_(['Ex-Employee', 'Shifted-out']))
 
     if status_filter:
         employees_query = employees_query.filter_by(status=status_filter)
     if location_filter:
         employees_query = employees_query.filter_by(location=location_filter)
         
-    sort_order = { 
-        'Vacant': -1, 'Active': 0, 'On Leave': 1, 'Vacation': 2, 
-        'Resigned': 3, 'Terminated': 4, 'Shifted-out': 98, 'Ex-Employee': 99
-    }
+    sort_order = { 'Vacant': -1, 'Active': 0, 'On Leave': 1, 'Vacation': 2, 'Resigned': 3, 'Terminated': 4, 'Shifted-out': 98, 'Ex-Employee': 99 }
     employees = sorted(
         employees_query.all(),
-        key=lambda item: (sort_order.get(item.status, 100), item.name)
+        key=lambda item: (sort_order.get(item.status, 100), item.room, item.name)
     )
 
     return render_template('dashboard.html', 
@@ -636,11 +626,6 @@ def view_amcs(amc_id):
     amc = db.session.get(AMCsService, amc_id)
     return render_template('view_amcs.html', amc=amc)
 
-@app.route('/uploads/<path:filename>')
-@login_required
-def download_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
 @app.route('/settings')
 @login_required
 def settings_dashboard():
@@ -712,56 +697,10 @@ def edit_user(user_id):
         return redirect(url_for('settings_dashboard'))
     return render_template('edit_user.html', user=user_to_edit)
 
-@app.route('/settings/delete_user/<int:user_id>', methods=['POST'])
+@app.route('/uploads/<path:filename>')
 @login_required
-def delete_user(user_id):
-    if not current_user.is_admin():
-        flash("You do not have permission to access this page.", 'danger')
-        return redirect(url_for('dashboard'))
-    if user_id == current_user.id:
-        flash("You cannot delete your own account.", 'danger')
-        return redirect(url_for('settings_dashboard'))
-    user_to_delete = db.session.get(AppUser, user_id)
-    if user_to_delete:
-        db.session.delete(user_to_delete)
-        db.session.commit()
-        flash("User deleted successfully!", 'success')
-    else:
-        flash("User not found.", "danger")
-    return redirect(url_for('settings_dashboard'))
-@app.route('/init-db/<string:secret_key>')
-def init_db(secret_key):
-    # Simple secret key to prevent accidental runs
-    if secret_key != 'CREATE-DATABASE-NOW':
-        return "Invalid secret key.", 403
-
-    try:
-        with app.app_context():
-            db.create_all()
-            
-            # Create the default admin user if it doesn't exist
-            if not AppUser.query.filter_by(username='admin').first():
-                new_admin = AppUser(
-                    username='admin', 
-                    email='admin@example.com', 
-                    mobile='N/A', 
-                    password='admin123', 
-                    role='admin'
-                )
-                db.session.add(new_admin)
-                db.session.commit()
-                return "Database initialized and admin user created successfully!"
-            else:
-                return "Database tables already exist, and admin user is already present."
-
-    except Exception as e:
-        return f"An error occurred: {e}"
+def download_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        if not AppUser.query.filter_by(username='admin').first():
-            new_admin = AppUser(username='admin', email='admin@panhome.com', mobile='N/A', password='admin123', role='admin')
-            db.session.add(new_admin)
-            db.session.commit()
     app.run(debug=True)
