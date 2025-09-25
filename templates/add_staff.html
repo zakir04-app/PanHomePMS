@@ -1,141 +1,165 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New Staff - PAN HOME PMS</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
-</head>
-<body>
-    <div class="dashboard-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
-                <h3>PAN HOME PMS</h3>
-            </div>
-            <nav class="sidebar-nav">
-                <ul>
-                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                    <li><a href="{{ url_for('add_staff') }}" class="active">Add New Staff</a></li>
-                    <li><a href="{{ url_for('inventory_dashboard') }}">Inventory</a></li>
-                    <li><a href="{{ url_for('maintenance_report') }}">Maintenance Report</a></li>
-                    <li><a href="#">AMCs Services</a></li>
-                    <li><a href="{{ url_for('data_management') }}">Data</a></li>
-                    <li><a href="#">Settings</a></li>
-                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
-                </ul>
-            </nav>
-        </aside>
-        <main class="main-content">
-            <header class="main-header">
-                <h2>Add New Staff</h2>
-            </header>
-            <section class="form-container">
-                <div class="messages">
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                      {% if messages %}
-                        {% for category, message in messages %}
-                          <div class="alert alert-{{ category }}">{{ message }}</div>
-                        {% endfor %}
-                      {% endif %}
-                    {% endwith %}
-                </div>
-                <h3>Add Single Employee</h3>
-                <form method="POST" action="{{ url_for('add_staff') }}" class="staff-form">
-                    <div class="form-group">
-                        <label for="accommodation_name">Accommodation Name</label>
-                        <select id="accommodation_name" name="accommodation_name" required>
-                            {% for camp in accommodations %}
-                            <option value="{{ camp.name }}">{{ camp.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="room">Room</label>
-                        <select id="room" name="room" required>
-                            {% for room in vacant_rooms %}
-                            <option value="{{ room.room_number }}">{{ room.room_number }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="emp_id">EMP ID</label>
-                        <input type="text" id="emp_id" name="emp_id" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="name">NAME</label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="designation">Designation</label>
-                        <input type="text" id="designation" name="designation">
-                    </div>
-                    <div class="form-group">
-                        <label for="nationality">Nationality</label>
-                        <select id="nationality" name="nationality">
-                            <option value="Pakistani">Pakistani</option>
-                            <option value="Indian">Indian</option>
-                            <option value="Bangladeshi">Bangladeshi</option>
-                            <option value="Nepali">Nepali</option>
-                            <option value="Filipino">Filipino</option>
-                            <option value="Sri Lankan">Sri Lankan</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="mobile_number">Mobile # (+971-050-1234567)</label>
-                        <input type="text" id="mobile_number" name="mobile_number" placeholder="+971-050-1234567">
-                    </div>
-                    <div class="form-group">
-                        <label for="status">Status</label>
-                        <select id="status" name="status">
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                            <option value="On Leave">On Leave</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="food_variety">Food Variety</label>
-                        <select id="food_variety" name="food_variety">
-                            <option value="Non-Veg Rice">Non-Veg Rice</option>
-                            <option value="Veg Rice">Veg Rice</option>
-                            <option value="Non-Veg Chapati">Non-Veg Chapati</option>
-                            <option value="Veg Chapati">Veg Chapati</option>
-                            <option value="Arabic">Arabic</option>
-                            <option value="Veg/Non-Veg Roti">Veg/Non-Veg Roti</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="meal_time">Meal Time</label>
-                        <select id="meal_time" name="meal_time">
-                            <option value="Lunch">Lunch</option>
-                            <option value="Dinner">Dinner</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="location">Location</label>
-                        <input type="text" id="location" name="location">
-                    </div>
-                    <div class="form-group">
-                        <label for="remarks">Remarks</label>
-                        <textarea id="remarks" name="remarks"></textarea>
-                    </div>
-                    <button type="submit" class="submit-btn">Add Employee</button>
-                </form>
-                
-                <hr>
+{% extends "base.html" %}
 
-                <h3>Upload from Excel</h3>
-                <form method="POST" action="{{ url_for('add_staff') }}" enctype="multipart/form-data" class="excel-form">
-                    <div class="form-group">
-                        <label for="file">Choose Excel File</label>
-                        <input type="file" id="file" name="file" accept=".xlsx, .xls">
-                    </div>
-                    <button type="submit" class="submit-btn">Upload Data</button>
-                </form>
-            </section>
-        </main>
-    </div>
-</body>
-</html>
+{% block title %}Add New Staff{% endblock %}
+
+{% block content %}
+<style>
+    .card h2 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 15px;
+    }
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 25px;
+    }
+    .form-group {
+        margin-bottom: 15px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        box-sizing: border-box;
+    }
+    .form-actions {
+        grid-column: 1 / -1;
+        text-align: right;
+        margin-top: 10px;
+    }
+    button {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    button:hover {
+        background-color: #4338ca;
+    }
+</style>
+
+<div class="card">
+    <h2>Add New Staff (Manual Entry)</h2>
+    <form action="{{ url_for('add_staff') }}" method="post">
+        <div class="form-grid">
+            
+            <div>
+                <div class="form-group">
+                    <label for="emp_id">EMP ID</label>
+                    <input type="text" id="emp_id" name="emp_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="designation">Designation</label>
+                    <input type="text" id="designation" name="designation">
+                </div>
+                <div class="form-group">
+                    <label for="nationality">Nationality</label>
+                    <select id="nationality" name="nationality">
+                        {% for nat in nationalities %}
+                            <option value="{{ nat }}">{{ nat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="mobile_number">Mobile Number</label>
+                    <input type="text" id="mobile_number" name="mobile_number">
+                </div>
+            </div>
+
+            <div>
+                <div class="form-group">
+                    <label for="accommodation_name">Accommodation Name</label>
+                    <select id="accommodation_name" name="accommodation_name" class="form-control">
+                        <option value="">-- Select Accommodation --</option>
+                        {% for acc in accommodations %}
+                            <option value="{{ acc.name }}">{{ acc.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="vacant_bed_id">Vacant Bed / Room</label>
+                    <select id="vacant_bed_id" name="vacant_bed_id" class="form-control" required>
+                        <option value="">-- First Select Accommodation --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="food_variety">Food Variety</label>
+                     <select id="food_variety" name="food_variety">
+                        {% for fv in food_varieties %}
+                            <option value="{{ fv }}">{{ fv }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="meal_time">Meal Time</label>
+                    <select id="meal_time" name="meal_time">
+                        {% for mt in meal_times %}
+                            <option value="{{ mt }}">{{ mt }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="remarks">Remarks</label>
+                    <textarea id="remarks" name="remarks" rows="3"></textarea>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                 <button type="submit">Assign Employee to Bed</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Add Staff (from Excel File)</h2>
+    <form action="{{ url_for('add_staff') }}" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="file">Upload Excel File</label>
+            <input type="file" id="file" name="file" accept=".xlsx, .xls, .csv">
+        </div>
+        <button type="submit">Upload and Synchronize</button>
+    </form>
+</div>
+
+<script>
+    const vacantBedsData = {{ vacant_beds | tojson }};
+    const accommodationSelect = document.getElementById('accommodation_name');
+    const vacantBedSelect = document.getElementById('vacant_bed_id');
+
+    accommodationSelect.addEventListener('change', function() {
+        const selectedAccommodation = this.value;
+        vacantBedSelect.innerHTML = '<option value="">-- Select a Bed --</option>';
+
+        if (selectedAccommodation) {
+            vacantBedsData.forEach(function(bed) {
+                if (bed.accommodation_name === selectedAccommodation) {
+                    const option = document.createElement('option');
+                    option.value = bed.id;
+                    option.textContent = `${bed.room} (Slot ID: ${bed.emp_id})`;
+                    vacantBedSelect.appendChild(option);
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

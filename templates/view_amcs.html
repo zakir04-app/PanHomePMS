@@ -1,59 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View AMCs Service - PAN HOME PMS</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
-</head>
-<body>
-    <div class="dashboard-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
-                <h3>PAN HOME PMS</h3>
-            </div>
-            <nav class="sidebar-nav">
-                <ul>
-                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                    <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
-                    <li><a href="{{ url_for('inventory_dashboard') }}">Inventory</a></li>
-                    <li><a href="{{ url_for('maintenance_report') }}">Maintenance Report</a></li>
-                    <li><a href="{{ url_for('amcs_dashboard') }}" class="active">AMCs Services</a></li>
-                    <li><a href="{{ url_for('data_management') }}">Data</a></li>
-                    <li><a href="#">Settings</a></li>
-                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
-                </ul>
-            </nav>
-        </aside>
-        <main class="main-content">
-            <header class="main-header">
-                <h2>View AMCs Service</h2>
-            </header>
-            <section class="form-container">
-                <div class="report-details">
-                    <p><strong>Service ID:</strong> {{ amc.service_id }}</p>
-                    <p><strong>Inspection/Service Date:</strong> {{ amc.date }}</p>
-                    <p><strong>Type:</strong> {{ amc.type }}</p>
-                    <p><strong>Supplier Name:</strong> {{ amc.supplier_name }}</p>
-                    <p><strong>Start Date:</strong> {{ amc.start_date }}</p>
-                    <p><strong>Expiry Date:</strong> {{ amc.end_date }}</p>
-                    <p><strong>Remarks:</strong> {{ amc.remarks }}</p>
-                    <p><strong>Attached File:</strong>
-                        {% if amc.attached_file %}
-                            <a href="{{ url_for('uploaded_file', filename=amc.attached_file) }}" target="_blank">View File</a>
-                        {% else %}
-                            N/A
-                        {% endif %}
-                    </p>
-                </div>
-                <div class="form-actions">
-                    <a href="{{ url_for('edit_amcs', amc_id=amc.id) }}" class="btn-primary">Edit Service</a>
-                    <a href="{{ url_for('amcs_dashboard') }}" class="btn-secondary">Back to List</a>
-                </div>
-            </section>
-        </main>
+{% extends "base.html" %}
+
+{% block title %}View AMC Details{% endblock %}
+
+{% block content %}
+<style>
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .btn-secondary { background-color: #6c757d; color: white; padding: 10px 18px; text-decoration: none; border-radius: 6px; font-weight: 500; }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;}
+    .detail-item strong { color: var(--text-secondary); display: block; margin-bottom: 5px; }
+    .detail-item span { font-size: 1.1rem; }
+    .detail-full { border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 20px; }
+</style>
+
+<div class="page-header">
+    <h1>AMC Service Details</h1>
+    <a href="{{ url_for('amcs_dashboard') }}" class="btn-secondary">Back to List</a>
+</div>
+
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item">
+            <strong>Service ID</strong>
+            <span>{{ amc.service_id }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>AMC Type</strong>
+            <span>{{ amc.type }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>Supplier</strong>
+            <span>{{ amc.supplier_name }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>Date of Entry</strong>
+            <span>{{ amc.date }}</span>
+        </div>
     </div>
-</body>
-</html>
+    <div class="detail-grid" style="border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 20px;">
+        <div class="detail-item">
+            <strong>Start Date</strong>
+            <span>{{ amc.start_date }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>End Date</strong>
+            <span>{{ amc.end_date }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>Duration</strong>
+            <span>{{ amc.duration }} days</span>
+        </div>
+        <div class="detail-item">
+            <strong>Remaining Days</strong>
+            <span>{{ amc.remaining_days }}</span>
+        </div>
+    </div>
+    <div class="detail-full">
+        <strong>Remarks</strong>
+        <p>{{ amc.remarks or 'No remarks.' }}</p>
+    </div>
+    {% if amc.attached_file %}
+    <div class="detail-full">
+        <strong>Attached File</strong>
+        <p><a href="{{ url_for('download_file', filename=amc.attached_file) }}">Download Attachment</a></p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

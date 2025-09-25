@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Camp Management{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto+Slab:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-bg: #111827; --main-bg: #f9fafb; --card-bg: #ffffff;
+            --text-primary: #1f2937; --text-secondary: #6b7280;
+            --accent-color: #4f46e5; --border-color: #e5e7eb;
+            --font-family: 'Inter', sans-serif;
+        }
+        body.theme-dark {
+            --sidebar-bg: #1f2937; --main-bg: #111827; --card-bg: #1f2937;
+            --text-primary: #f9fafb; --text-secondary: #9ca3af;
+            --border-color: #374151; --accent-color: #6366f1;
+        }
+        body.theme-light {
+            --sidebar-bg: #ffffff; --main-bg: #f0f2f5; --card-bg: #ffffff;
+            --text-primary: #1f2937; --text-secondary: #4b5563;
+            --accent-color: #ef4444; --border-color: #d1d5db;
+        }
+        body.theme-blue {
+            --sidebar-bg: #1e3a8a; --main-bg: #eff6ff; --card-bg: #ffffff;
+            --text-primary: #1e3a8a; --text-secondary: #3b82f6;
+            --accent-color: #2563eb; --border-color: #dbeafe;
+        }
+        body.theme-ocean {
+            --sidebar-bg: #0d253f; --main-bg: #f0f7f8; --card-bg: #ffffff;
+            --text-primary: #0d253f; --text-secondary: #01b4e4;
+            --accent-color: #01b4e4; --border-color: #cfe7ed;
+        }
+        body.theme-skyblue {
+            --sidebar-bg: #0ea5e9; --main-bg: #f0f9ff; --card-bg: #ffffff;
+            --text-primary: #0c4a6e; --text-secondary: #0ea5e9;
+            --accent-color: #0284c7; --border-color: #e0f2fe;
+        }
+        body.theme-darkgreen {
+            --sidebar-bg: #14532d; --main-bg: #f0fdf4; --card-bg: #ffffff;
+            --text-primary: #14532d; --text-secondary: #16a34a;
+            --accent-color: #16a34a; --border-color: #dcfce7;
+        }
+        body.theme-darkgold {
+            --sidebar-bg: #1c1917; --main-bg: #292524; --card-bg: #1c1917;
+            --text-primary: #fafaf9; --text-secondary: #d69e2e;
+            --accent-color: #d69e2e; --border-color: #44403c;
+        }
+        body.font-inter { --font-family: 'Inter', sans-serif; }
+        body.font-poppins { --font-family: 'Poppins', sans-serif; }
+        body.font-roboto-slab { --font-family: 'Roboto Slab', serif; }
+        body.font-size-small { font-size: 14px; }
+        body.font-size-normal { font-size: 16px; }
+        body.font-size-large { font-size: 18px; }
+        
+        body { margin: 0; font-family: var(--font-family); background-color: var(--main-bg); color: var(--text-primary); }
+        .sidebar { position: fixed; left: 0; top: 0; width: 250px; height: 100%; background-color: var(--sidebar-bg); padding-top: 20px; }
+        .sidebar .logo-container { text-align: center; margin-bottom: 30px; }
+        .sidebar .logo { max-width: 150px; }
+        .sidebar ul { list-style-type: none; padding: 0; margin: 0; }
+        .sidebar ul li a { display: block; padding: 15px 30px; color: #9ca3af; text-decoration: none; font-weight: 500; transition: all 0.2s; }
+        body.theme-light .sidebar ul li a { color: #374151; }
+        body.theme-blue .sidebar ul li a { color: #dbeafe; }
+        .sidebar ul li a:hover { background-color: rgba(255, 255, 255, 0.05); color: #ffffff; }
+        body.theme-light .sidebar ul li a:hover { background-color: #f3f4f6; }
+        body.theme-blue .sidebar ul li a:hover { background-color: #1d4ed8; }
+        body.theme-ocean .sidebar ul li a:hover, body.theme-skyblue .sidebar ul li a:hover, body.theme-darkgreen .sidebar ul li a:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .sidebar ul li.active a { background-color: var(--accent-color); color: #ffffff; }
+        .main-content { margin-left: 250px; padding: 30px; }
+        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.07); padding: 25px; margin-bottom: 25px; }
+        h1, h2, h3 { color: var(--text-primary); font-weight: 600; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid transparent; }
+        .alert-success { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+        .alert-danger { background-color: #f8d7da; color: #842029; border-color: #f5c2c7; }
+        .alert-info { background-color: #cff4fc; color: #055160; border-color: #b6effb; }
+    </style>
+</head>
+<body class="theme-{{ current_user.theme if current_user.is_authenticated else 'default' }} font-{{ current_user.font_style if current_user.is_authenticated else 'inter' }} font-size-{{ current_user.font_size if current_user.is_authenticated else 'normal' }}">
+    <div class="sidebar">
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="logo">
+        </div>
+        <ul>
+            <li class="{{ 'active' if request.endpoint == 'dashboard' else '' }}"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="{{ 'active' if request.endpoint == 'add_staff' else '' }}"><a href="{{ url_for('add_staff') }}">Add Staff</a></li>
+            <li class="{{ 'active' if request.endpoint == 'data_management' else '' }}"><a href="{{ url_for('data_management') }}">Data Management</a></li>
+            <li class="{{ 'active' if request.endpoint == 'inventory_dashboard' else '' }}"><a href="{{ url_for('inventory_dashboard') }}">Inventory</a></li>
+            <li class="{{ 'active' if request.endpoint == 'maintenance_report' else '' }}"><a href="{{ url_for('maintenance_report') }}">Maintenance Report</a></li>
+            <li class="{{ 'active' if request.endpoint == 'amcs_dashboard' else '' }}"><a href="{{ url_for('amcs_dashboard') }}">AMCs Services</a></li>
+            {% if current_user.is_admin() %}
+                <li class="{{ 'active' if 'settings' in request.endpoint else '' }}"><a href="{{ url_for('settings_dashboard') }}">Settings</a></li>
+            {% endif %}
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

@@ -1,55 +1,153 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Management - PAN HOME PMS</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
-</head>
-<body>
-    <div class="dashboard-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="sidebar-logo">
-                <h3>PAN HOME PMS</h3>
+{% extends "base.html" %}
+
+{% block title %}Data Management{% endblock %}
+
+{% block content %}
+<style>
+    .page-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        align-items: flex-start;
+    }
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 25px;
+        align-items: flex-end;
+    }
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+    .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+    }
+    .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .summary-table td {
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .summary-table .count {
+        text-align: right;
+        font-weight: 600;
+    }
+    button {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+</style>
+
+<h1>Data Management & Summaries</h1>
+
+<div class="card">
+    <h2>Export Employee Data</h2>
+    <form method="POST" action="{{ url_for('data_management') }}">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="download_type">Filter By</label>
+                <select name="download_type" id="download_type">
+                    <option value="all">All Records</option>
+                    <option value="accommodation">Accommodation</option>
+                    <option value="location">Location</option>
+                    <option value="status">Status</option>
+                </select>
             </div>
-            <nav class="sidebar-nav">
-                <ul>
-                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                    <li><a href="{{ url_for('add_staff') }}">Add New Staff</a></li>
-                    <li><a href="#">Inventory</a></li>
-                    <li><a href="#">Maintenance Report</a></li>
-                    <li><a href="#">AMCs Services</a></li>
-                    <li><a href="{{ url_for('data_management') }}" class="active">Data</a></li>
-                    <li><a href="#">Settings</a></li>
-                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
-                </ul>
-            </nav>
-        </aside>
-        <main class="main-content">
-            <header class="main-header">
-                <h2>Data Management</h2>
-            </header>
-            <section class="form-container">
-                <h3>Download Data</h3>
-                <p>Download employee data in Excel format based on filters.</p>
-                <form method="POST" action="#" class="data-form">
-                    <div class="form-group">
-                        <label for="download_type">Download Type</label>
-                        <select id="download_type" name="download_type">
-                            <option value="accommodation">By Accommodation</option>
-                            <option value="status">By Status</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="filter_value">Filter Value</label>
-                        <input type="text" id="filter_value" name="filter_value" placeholder="e.g. Camp A or Active">
-                    </div>
-                    <button type="submit" class="submit-btn">Download</button>
-                </form>
-            </section>
-        </main>
+            <div class="form-group">
+                <label for="filter_value">Value</label>
+                <select name="filter_value" id="filter_value">
+                    <option value="">-- Select Filter First --</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit">Download Excel File</button>
+    </form>
+</div>
+
+<div class="page-grid">
+    <div class="card">
+        <h2>Summary by Designation</h2>
+        <table class="summary-table">
+            <tbody>
+                {% for designation, count in designation_summary %}
+                <tr>
+                    <td>{{ designation }}</td>
+                    <td class="count">{{ count }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td>No data available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-</body>
-</html>
+    <div class="card">
+        <h2>Summary by Nationality</h2>
+        <table class="summary-table">
+            <tbody>
+                {% for nationality, count in nationality_summary %}
+                <tr>
+                    <td>{{ nationality }}</td>
+                    <td class="count">{{ count }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td>No data available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const filterOptions = {
+        accommodation: {{ accommodations | tojson | safe }},
+        location: {{ locations | tojson | safe }},
+        status: {{ statuses | tojson | safe }}
+    };
+
+    const typeSelect = document.getElementById('download_type');
+    const valueSelect = document.getElementById('filter_value');
+
+    typeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        valueSelect.innerHTML = ''; // Clear previous options
+
+        if (selectedType && filterOptions[selectedType]) {
+            let options = filterOptions[selectedType];
+            
+            // Accommodations are objects, others are strings
+            if (selectedType === 'accommodation') {
+                 options.forEach(function(item) {
+                    const option = new Option(item.name, item.name);
+                    valueSelect.add(option);
+                });
+            } else {
+                options.forEach(function(item) {
+                    const option = new Option(item, item);
+                    valueSelect.add(option);
+                });
+            }
+        } else {
+            const option = new Option('-- Select Filter First --', '');
+            valueSelect.add(option);
+        }
+    });
+</script>
+{% endblock %}
