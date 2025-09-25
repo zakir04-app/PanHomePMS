@@ -1,11 +1,10 @@
 import os
 import io
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from sqlalchemy import func, or_
 import pandas as pd
 
@@ -14,7 +13,6 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///panhome.db')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -140,6 +138,18 @@ def login():
         else:
             flash("Invalid username or password", "danger")
     return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash("You have been logged out successfully.", "success")
+    return redirect(url_for('login'))
+
+@app.route('/forgot_password')
+def forgot_password():
+    flash("Please contact your IT administrator to reset your password.", "info")
+    return redirect(url_for('login'))
 
 @app.route('/logout')
 @login_required
@@ -701,6 +711,29 @@ def edit_user(user_id):
 @login_required
 def download_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/create-tables/<string:secret_key>')
+def create_tables(secret_key):
+    if secret_key != 'SETUP-DATABASE-NOW':
+        return "Invalid secret key.", 403
+    try:
+        with app.app_context():
+            db.create_all()
+            if not AppUser.query.filter_by(username='admin').first():
+                new_admin = AppUser(
+                    username='admin', 
+                    email='admin@example.com', 
+                    mobile='N/A', 
+                    password='admin123', 
+                    role='admin'
+                )
+                db.session.add(new_admin)
+                db.session.commit()
+                return "Tables created successfully and admin user added!"
+            else:
+                return "Tables already exist, and admin user is already present."
+    except Exception as e:
+        return f"An error occurred: {e}"
 
 if __name__ == '__main__':
     app.run(debug=True)
