@@ -139,16 +139,15 @@ def login():
             flash("Invalid username or password", "danger")
     return render_template('login.html')
 
-@app.route('/forgot_password')
-def forgot_password():
-    flash("Please contact your IT administrator to reset your password.", "info")
-    return redirect(url_for('login'))
-
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    flash("You have been logged out successfully.", "success")
+    return redirect(url_for('login'))
+
+@app.route('/forgot_password')
+def forgot_password():
+    flash("Please contact your IT administrator to reset your password.", "info")
     return redirect(url_for('login'))
 
 @app.route('/dashboard')
@@ -195,6 +194,121 @@ def dashboard():
                            total_on_vacation=total_on_vacation, total_resigned_terminated=total_resigned_terminated,
                            employees=employees, query=query, location_summary=location_summary)
 
+@app.route('/add_staff', methods=['GET', 'POST'])
+@login_required
+def add_staff():
+    if request.method == 'POST':
+        if 'file' in request.files and request.files['file'].filename != '':
+            file = request.files['file']
+            if file and file.filename.endswith(('.xlsx', '.xls', '.csv')):
+                try:
+                    read_method = pd.read_excel if file.filename.endswith(('.xlsx', '.xls')) else pd.read_csv
+                    df = read_method(file, dtype=str)
+                    df.columns = [str(col).strip().upper().replace(' ', '_').replace('#', 'NUMBER') for col in df.columns]
+                    df.fillna('N/A', inplace=True)
+                    
+                    accommodations_in_file = df['ACCOMMODATION_NAME'].unique().tolist()
+                    if accommodations_in_file:
+                        Employee.query.filter(Employee.accommodation_name.in_(accommodations_in_file)).delete(synchronize_session=False)
+                    
+                    processed_emp_ids = set()
+                    duplicates_found = []
+                    vacant_counters = {}
+
+                    for _, row in df.iterrows():
+                        status = row.get('STATUS', 'N/A')
+                        emp_id = str(row.get('EMP_ID', 'N/A'))
+                        
+                        if status.lower() != 'vacant' and emp_id != 'N/A' and emp_id:
+                            if emp_id in processed_emp_ids:
+                                duplicates_found.append(emp_id)
+                                continue 
+                            processed_emp_ids.add(emp_id)
+
+                        accommodation_name = row.get('ACCOMMODATION_NAME', 'N/A')
+                        if accommodation_name not in accommodations_in_file: continue
+                        room_number = str(row.get('ROOM', 'N/A'))
+                        if accommodation_name == 'N/A' or room_number == 'N/A': continue
+                        
+                        existing_camp = Camp.query.filter_by(name=accommodation_name).first()
+                        if not existing_camp:
+                            new_camp = Camp(name=accommodation_name, location=row.get('LOCATION', 'N/A'))
+                            db.session.add(new_camp)
+                        
+                        if status.lower() == 'vacant':
+                            vacant_counters.setdefault(room_number, 0)
+                            vacant_counters[room_number] += 1
+                            emp_id = f"{room_number}-Vacant-{vacant_counters[room_number]}"
+                        
+                        bed = Employee(
+                            accommodation_name=accommodation_name, room=room_number,
+                            status=status, emp_id=emp_id, name=row.get('NAME', '-'),
+                            designation=row.get('DESIGNATION', '-'), nationality=row.get('NATIONALITY', '-'),
+                            mobile_number=str(row.get('MOBILE_NUMBER', '-')), food_variety=row.get('FOOD_VARIETY', '-'),
+                            meal_time=row.get('MEAL_TIME', '-'), location=row.get('LOCATION', 'N/A'),
+                            remarks=row.get('REMARKS', '')
+                        )
+                        db.session.add(bed)
+
+                    db.session.commit()
+                    
+                    if duplicates_found:
+                        flash(f"File uploaded, but skipped duplicate EMP IDs: {', '.join(set(duplicates_found))}", "warning")
+                    else:
+                        flash('File uploaded and data synchronized successfully!', 'success')
+
+                except KeyError as e:
+                    flash(f"Upload failed. A required column is missing from your file: {e}. Please check the Excel pattern.", "danger")
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'File upload failed: {e}', 'danger')
+            else:
+                flash('Invalid file format. Please upload an Excel or CSV file.', 'danger')
+        else:
+            try:
+                emp_id_to_assign = request.form.get('emp_id')
+                vacant_bed_id = request.form.get('vacant_bed_id')
+                
+                vacant_bed = db.session.get(Employee, int(vacant_bed_id))
+                
+                if not vacant_bed or vacant_bed.status != 'Vacant':
+                    flash('Selected bed is not available or not vacant.', 'danger')
+                    return redirect(url_for('add_staff'))
+
+                vacant_bed.emp_id = emp_id_to_assign
+                vacant_bed.name = request.form.get('name')
+                vacant_bed.designation = request.form.get('designation')
+                vacant_bed.nationality = request.form.get('nationality')
+                vacant_bed.mobile_number = request.form.get('mobile_number')
+                vacant_bed.status = 'Active'
+                vacant_bed.location = request.form.get('location')
+                vacant_bed.food_variety = request.form.get('food_variety')
+                vacant_bed.meal_time = request.form.get('meal_time')
+                vacant_bed.remarks = request.form.get('remarks')
+                
+                db.session.commit()
+                flash('Employee assigned to bed successfully!', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error assigning employee: {e}', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    accommodations = Camp.query.order_by(Camp.name).all()
+    vacant_beds_query = Employee.query.filter_by(status='Vacant').order_by(Employee.accommodation_name, Employee.room).all()
+    vacant_beds_list = [{'id': bed.id, 'accommodation_name': bed.accommodation_name, 'room': bed.room, 'emp_id': bed.emp_id} for bed in vacant_beds_query]
+    
+    locations_query = db.session.query(Employee.location).filter(Employee.location.isnot(None)).distinct().order_by(Employee.location).all()
+    locations = [loc[0] for loc in locations_query if loc[0]]
+
+    nationalities = ['Afghan', 'Albanian', 'Algerian', 'American', 'Andorran', 'Angolan', 'Argentinean', 'Armenian', 'Australian', 'Austrian', 'Azerbaijani', 'Bahamian', 'Bahraini', 'Bangladeshi', 'Barbadian', 'Belarusian', 'Belgian', 'Belizean', 'Beninese', 'Bhutanese', 'Bolivian', 'Bosnian', 'Brazilian', 'British', 'Bruneian', 'Bulgarian', 'Burkinabe', 'Burmese', 'Burundian', 'Cambodian', 'Cameroonian', 'Canadian', 'Cape Verdean', 'Central African', 'Chadian', 'Chilean', 'Chinese', 'Colombian', 'Comoran', 'Congolese', 'Costa Rican', 'Croatian', 'Cuban', 'Cypriot', 'Czech', 'Danish', 'Djibouti', 'Dominican', 'Dutch', 'East Timorese', 'Ecuadorean', 'Egyptian', 'Emirati', 'Equatorial Guinean', 'Eritrean', 'Estonian', 'Ethiopian', 'Fijian', 'Filipino', 'Finnish', 'French', 'Gabonese', 'Gambian', 'Georgian', 'German', 'Ghanaian', 'Greek', 'Grenadian', 'Guatemalan', 'Guinean', 'Guyanese', 'Haitian', 'Honduran', 'Hungarian', 'Icelander', 'Indian', 'Indonesian', 'Iranian', 'Iraqi', 'Irish', 'Israeli', 'Italian', 'Ivorian', 'Jamaican', 'Japanese', 'Jordanian', 'Kazakhstani', 'Kenyan', 'Kuwaiti', 'Kyrgyz', 'Laotian', 'Latvian', 'Lebanese', 'Liberian', 'Libyan', 'Lithuanian', 'Luxembourger', 'Macedonian', 'Malagasy', 'Malawian', 'Malaysian', 'Maldivan', 'Malian', 'Maltese', 'Mauritanian', 'Mauritian', 'Mexican', 'Moldovan', 'Monacan', 'Mongolian', 'Montenegrin', 'Moroccan', 'Mozambican', 'Namibian', 'Nauruan', 'Nepalese', 'New Zealander', 'Nicaraguan', 'Nigerian', 'Nigerien', 'North Korean', 'Norwegian', 'Omani', 'Pakistani', 'Palauan', 'Panamanian', 'Paraguayan', 'Peruvian', 'Polish', 'Portuguese', 'Qatari', 'Romanian', 'Russian', 'Rwandan', 'Salvadoran', 'Samoan', 'San Marinese', 'Sao Tomean', 'Saudi', 'Senegalese', 'Serbian', 'Seychellois', 'Sierra Leonean', 'Singaporean', 'Slovak', 'Slovenian', 'Solomon Islander', 'Somali', 'South African', 'South Korean', 'Spanish', 'Sri Lankan', 'Sudanese', 'Surinamer', 'Swazi', 'Swedish', 'Swiss', 'Syrian', 'Taiwanese', 'Tajik', 'Tanzanian', 'Thai', 'Togolese', 'Tongan', 'Trinidadian/Tobagonian', 'Tunisian', 'Turkish', 'Turkmen', 'Tuvaluan', 'Ugandan', 'Ukrainian', 'Uruguayan', 'Uzbekistani', 'Venezuelan', 'Vietnamese', 'Yemeni', 'Zambian', 'Zimbabwean']
+    food_varieties = ['Non-Veg Rice', 'Veg Rice', 'Non-Veg Chapati', 'Veg Chapati', 'Arabic', 'Veg/Non-Veg Roti']
+    meal_times = ['Lunch', 'Dinner']
+    
+    return render_template('add_staff.html', 
+                           accommodations=accommodations, vacant_beds=vacant_beds_list,
+                           locations=locations, nationalities=nationalities,
+                           food_varieties=food_varieties, meal_times=meal_times)
+
 @app.route('/edit_employee/<string:emp_id>', methods=['GET', 'POST'])
 @login_required
 def edit_employee(emp_id):
@@ -223,10 +337,9 @@ def edit_employee(emp_id):
                 
                 vacant_bed = Employee(
                     emp_id=new_vacant_id, status='Vacant', name='-',
-                    accommodation_name=original_acc,
-                    room=original_room, location=original_loc,
-                    designation='-', nationality='-', mobile_number='-',
-                    food_variety='-', meal_time='-', remarks='Bedspace'
+                    accommodation_name=original_acc, room=original_room,
+                    location=original_loc, designation='-', nationality='-',
+                    mobile_number='-', food_variety='-', meal_time='-', remarks='Bedspace'
                 )
                 db.session.add(vacant_bed)
             else:
@@ -254,6 +367,7 @@ def edit_employee(emp_id):
                 employee.nationality = request.form['nationality']
                 employee.mobile_number = request.form['mobile_number']
                 employee.status = request.form['status']
+                employee.location = request.form['location']
                 employee.food_variety = request.form['food_variety']
                 employee.meal_time = request.form['meal_time']
                 employee.remarks = request.form['remarks']
@@ -269,99 +383,21 @@ def edit_employee(emp_id):
     vacant_beds_query = Employee.query.filter_by(status='Vacant').order_by(Employee.accommodation_name, Employee.room).all()
     vacant_beds_list = [{'id': bed.id, 'accommodation_name': bed.accommodation_name, 'room': bed.room, 'emp_id': bed.emp_id} for bed in vacant_beds_query]
     
-    nationalities = ['Afghan', 'Algerian', 'American', 'Andorran', 'Angolan', 'Antiguans', 'Argentinean', 'Armenian', 'Australian', 'Austrian', 'Azerbaijani', 'Bahamian', 'Bahraini', 'Bangladeshi', 'Barbadian', 'Barbudans', 'Batswana', 'Belarusian', 'Belgian', 'Belizean', 'Beninese', 'Bhutanese', 'Bolivian', 'Bosnian', 'Brazilian', 'British', 'Bruneian', 'Bulgarian', 'Burkinabe', 'Burmese', 'Burundian', 'Cambodian', 'Cameroonian', 'Canadian', 'Cape Verdean', 'Central African', 'Chadian', 'Chilean', 'Chinese', 'Colombian', 'Comoran',  'Congolese', 'Costa Rican', 'Croatian', 'Cuban', 'Cypriot', 'Czech', 'Danish', 'Djibouti', 'Dominican', 'Dutch', 'East Timorese', 'Ecuadorean', 'Egyptian', 'Emirian', 'Equatorial Guinean', 'Eritrean', 'Estonian', 'Ethiopian', 'Fijian', 'Filipino', 'Finnish', 'French', 'Gabonese', 'Gambian', 'Georgian', 'German', 'Ghanaian', 'Greek', 'Grenadian', 'Guatemalan', 'Guinea-Bissauan', 'Guinean', 'Guyanese', 'Haitian', 'Herzegovinian', 'Honduran', 'Hungarian', 'I-Kiribati', 'Icelander', 'Indian', 'Indonesian', 'Iranian', 'Iraqi', 'Irish', 'Israeli', 'Italian', 'Ivorian', 'Jamaican', 'Japanese', 'Jordanian', 'Kazakhstani', 'Kenyan', 'Kittian and Nevisian', 'Kuwaiti', 'Kyrgyz', 'Laotian', 'Latvian', 'Lebanese', 'Liberian', 'Libyan', 'Liechtensteiner', 'Lithuanian', 'Luxembourger', 'Macedonian', 'Malagasy', 'Malawian', 'Malaysian', 'Maldivan', 'Malian', 'Maltese', 'Marshallese', 'Mauritanian', 'Mauritian', 'Mexican', 'Micronesian', 'Moldovan', 'Monacan', 'Mongolian', 'Moroccan', 'Mosotho', 'Motswana', 'Mozambican', 'Namibian', 'Nauruan', 'Nepalese', 'New Zealander', 'Nicaraguan', 'Nigerian', 'Nigerien', 'North Korean', 'Northern Irish', 'Norwegian', 'Omani', 'Pakistani', 'Palauan', 'Panamanian', 'Papua New Guinean', 'Paraguayan', 'Peruvian', 'Polish', 'Portuguese', 'Qatari', 'Romanian', 'Russian', 'Rwandan', 'Saint Lucian', 'Salvadoran', 'Samoan', 'San Marinese', 'Sao Tomean', 'Saudi', 'Scottish', 'Senegalese', 'Serbian', 'Seychellois', 'Sierra Leonean', 'Singaporean', 'Slovakian', 'Slovenian', 'Solomon Islander', 'Somali', 'South African', 'South Korean', 'Spanish', 'Sri Lankan', 'Sudanese', 'Surinamer', 'Swazi', 'Swedish', 'Swiss', 'Syrian', 'Taiwanese', 'Tajik', 'Tanzanian', 'Thai', 'Togolese', 'Tongan', 'Trinidadian or Tobagonian', 'Tunisian', 'Turkish', 'Tuvaluan', 'Ugandan', 'Ukrainian', 'Uruguayan', 'Uzbekistani', 'Venezuelan', 'Vietnamese', 'Welsh', 'Yemenite', 'Zambian', 'Zimbabwean']
+    locations_query = db.session.query(Employee.location).filter(Employee.location.isnot(None)).distinct().order_by(Employee.location).all()
+    locations = [loc[0] for loc in locations_query if loc[0]]
+    
+    nationalities = ['Afghan', 'Albanian', 'Algerian', 'American', 'Andorran', 'Angolan', 'Argentinean', 'Armenian', 'Australian', 'Austrian', 'Azerbaijani', 'Bahamian', 'Bahraini', 'Bangladeshi', 'Barbadian', 'Belarusian', 'Belgian', 'Belizean', 'Beninese', 'Bhutanese', 'Bolivian', 'Bosnian', 'Brazilian', 'British', 'Bruneian', 'Bulgarian', 'Burkinabe', 'Burmese', 'Burundian', 'Cambodian', 'Cameroonian', 'Canadian', 'Cape Verdean', 'Central African', 'Chadian', 'Chilean', 'Chinese', 'Colombian', 'Comoran', 'Congolese', 'Costa Rican', 'Croatian', 'Cuban', 'Cypriot', 'Czech', 'Danish', 'Djibouti', 'Dominican', 'Dutch', 'East Timorese', 'Ecuadorean', 'Egyptian', 'Emirati', 'Equatorial Guinean', 'Eritrean', 'Estonian', 'Ethiopian', 'Fijian', 'Filipino', 'Finnish', 'French', 'Gabonese', 'Gambian', 'Georgian', 'German', 'Ghanaian', 'Greek', 'Grenadian', 'Guatemalan', 'Guinean', 'Guyanese', 'Haitian', 'Honduran', 'Hungarian', 'Icelander', 'Indian', 'Indonesian', 'Iranian', 'Iraqi', 'Irish', 'Israeli', 'Italian', 'Ivorian', 'Jamaican', 'Japanese', 'Jordanian', 'Kazakhstani', 'Kenyan', 'Kuwaiti', 'Kyrgyz', 'Laotian', 'Latvian', 'Lebanese', 'Liberian', 'Libyan', 'Lithuanian', 'Luxembourger', 'Macedonian', 'Malagasy', 'Malawian', 'Malaysian', 'Maldivan', 'Malian', 'Maltese', 'Mauritanian', 'Mauritian', 'Mexican', 'Moldovan', 'Monacan', 'Mongolian', 'Montenegrin', 'Moroccan', 'Mozambican', 'Namibian', 'Nauruan', 'Nepalese', 'New Zealander', 'Nicaraguan', 'Nigerian', 'Nigerien', 'North Korean', 'Norwegian', 'Omani', 'Pakistani', 'Palauan', 'Panamanian', 'Paraguayan', 'Peruvian', 'Polish', 'Portuguese', 'Qatari', 'Romanian', 'Russian', 'Rwandan', 'Salvadoran', 'Samoan', 'San Marinese', 'Sao Tomean', 'Saudi', 'Senegalese', 'Serbian', 'Seychellois', 'Sierra Leonean', 'Singaporean', 'Slovak', 'Slovenian', 'Solomon Islander', 'Somali', 'South African', 'South Korean', 'Spanish', 'Sri Lankan', 'Sudanese', 'Surinamer', 'Swazi', 'Swedish', 'Swiss', 'Syrian', 'Taiwanese', 'Tajik', 'Tanzanian', 'Thai', 'Togolese', 'Tongan', 'Trinidadian/Tobagonian', 'Tunisian', 'Turkish', 'Turkmen', 'Tuvaluan', 'Ugandan', 'Ukrainian', 'Uruguayan', 'Uzbekistani', 'Venezuelan', 'Vietnamese', 'Yemeni', 'Zambian', 'Zimbabwean']
     food_varieties = ['Non-Veg Rice', 'Veg Rice', 'Non-Veg Chapati', 'Veg Chapati', 'Arabic', 'Veg/Non-Veg Roti']
     meal_times = ['Lunch', 'Dinner']
     statuses = ['Active', 'Vacation', 'Resigned', 'Terminated', 'Other']
     is_vacant_record = employee.status == 'Vacant'
 
     return render_template('edit_employee.html', 
-                           employee=employee, is_vacant_record=is_vacant_record,
-                           nationalities=nationalities, food_varieties=food_varieties,
-                           meal_times=meal_times, statuses=statuses,
-                           accommodations=accommodations, vacant_beds=vacant_beds_list)
-
-@app.route('/add_staff', methods=['GET', 'POST'])
-@login_required
-def add_staff():
-    if request.method == 'POST':
-        if 'file' in request.files and request.files['file'].filename != '':
-            file = request.files['file']
-            if file and file.filename.endswith(('.xlsx', '.xls', '.csv')):
-                try:
-                    read_method = pd.read_excel if file.filename.endswith(('.xlsx', '.xls')) else pd.read_csv
-                    df = read_method(file, dtype=str)
-                    df.fillna('N/A', inplace=True)
-                    accommodations_in_file = df['Accommodation Name'].unique().tolist()
-                    if accommodations_in_file:
-                        Employee.query.filter(Employee.accommodation_name.in_(accommodations_in_file)).delete(synchronize_session=False)
-                    vacant_counters = {}
-                    for _, row in df.iterrows():
-                        accommodation_name = row.get('Accommodation Name', 'N/A')
-                        if accommodation_name not in accommodations_in_file: continue
-                        room_number = str(row.get('Room', 'N/A'))
-                        status = row.get('Status', 'N/A')
-                        if accommodation_name == 'N/A' or room_number == 'N/A': continue
-                        existing_camp = Camp.query.filter_by(name=accommodation_name).first()
-                        if not existing_camp:
-                            new_camp = Camp(name=accommodation_name, location=row.get('Location', 'N/A'))
-                            db.session.add(new_camp)
-                        emp_id = str(row.get('EMP ID', 'N/A'))
-                        if status.lower() == 'vacant':
-                            vacant_counters.setdefault(room_number, 0)
-                            vacant_counters[room_number] += 1
-                            emp_id = f"{room_number}-Vacant-{vacant_counters[room_number]}"
-                        bed = Employee(
-                            accommodation_name=accommodation_name, room=room_number,
-                            status=status, emp_id=emp_id, name=row.get('NAME', '-'),
-                            designation=row.get('Designation', '-'), nationality=row.get('Nationality', '-'),
-                            mobile_number=str(row.get('Mobile Number', '-')), food_variety=row.get('Food Variety', '-'),
-                            meal_time=row.get('Meal Time', '-'), location=row.get('Location', 'N/A'),
-                            remarks=row.get('Remarks', '')
-                        )
-                        db.session.add(bed)
-                    db.session.commit()
-                    flash('File uploaded and data synchronized successfully!', 'success')
-                except Exception as e:
-                    db.session.rollback()
-                    flash(f'File upload failed: {e}', 'danger')
-            else:
-                flash('Invalid file format. Please upload an Excel or CSV file.', 'danger')
-        else:
-            try:
-                emp_id_to_assign = request.form.get('emp_id')
-                vacant_bed_id = request.form.get('vacant_bed_id')
-                vacant_bed = db.session.get(Employee, int(vacant_bed_id))
-                if not vacant_bed or vacant_bed.status != 'Vacant':
-                    flash('Selected bed is not vacant.', 'danger')
-                    return redirect(url_for('add_staff'))
-                vacant_bed.emp_id = emp_id_to_assign
-                vacant_bed.name = request.form.get('name')
-                vacant_bed.designation = request.form.get('designation')
-                vacant_bed.nationality = request.form.get('nationality')
-                vacant_bed.mobile_number = request.form.get('mobile_number')
-                vacant_bed.status = 'Active'
-                vacant_bed.food_variety = request.form.get('food_variety')
-                vacant_bed.meal_time = request.form.get('meal_time')
-                vacant_bed.remarks = request.form.get('remarks')
-                db.session.commit()
-                flash('Employee assigned to bed successfully!', 'success')
-            except Exception as e:
-                db.session.rollback()
-                flash(f'Error assigning employee: {e}', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    accommodations = Camp.query.order_by(Camp.name).all()
-    vacant_beds_query = Employee.query.filter_by(status='Vacant').order_by(Employee.accommodation_name, Employee.room).all()
-    vacant_beds_list = [{'id': bed.id, 'accommodation_name': bed.accommodation_name, 'room': bed.room, 'emp_id': bed.emp_id} for bed in vacant_beds_query]
-    nationalities = ['Pakistani', 'Indian', 'Bangladeshi', 'Nepali', 'Filipino', 'Sri Lankan', 'Other']
-    food_varieties = ['Non-Veg Rice', 'Veg Rice', 'Non-Veg Chapati', 'Veg Chapati', 'Arabic', 'Veg/Non-Veg Roti']
-    meal_times = ['Lunch', 'Dinner']
-    return render_template('add_staff.html', 
-                           accommodations=accommodations, vacant_beds=vacant_beds_list,
-                           nationalities=nationalities, food_varieties=food_varieties,
-                           meal_times=meal_times)
-
+        employee=employee, is_vacant_record=is_vacant_record,
+        nationalities=nationalities, food_varieties=food_varieties,
+        meal_times=meal_times, statuses=statuses,
+        accommodations=accommodations, vacant_beds=vacant_beds_list,
+        locations=locations)
 @app.route('/data', methods=['GET', 'POST'])
 @login_required
 def data_management():
@@ -733,4 +769,10 @@ def create_tables(secret_key):
         return f"An error occurred: {e}"
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        if not AppUser.query.filter_by(username='admin').first():
+            new_admin = AppUser(username='admin', email='admin@panhome.com', mobile='N/A', password='admin123', role='admin')
+            db.session.add(new_admin)
+            db.session.commit()
     app.run(debug=True)

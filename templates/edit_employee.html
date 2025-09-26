@@ -67,6 +67,14 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label for="location">Location</label>
+                    <select id="location" name="location">
+                        {% for loc in locations %}
+                        <option value="{{ loc }}" {% if loc == employee.location %}selected{% endif %}>{{ loc }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="food_variety">Food Variety</label>
                     <select id="food_variety" name="food_variety">
                         {% for fv in food_varieties %}
@@ -84,7 +92,7 @@
                 </div>
                  <div class="form-group">
                     <label for="remarks">Remarks</label>
-                    <textarea id="remarks" name="remarks" rows="5">{{ employee.remarks }}</textarea>
+                    <textarea id="remarks" name="remarks" rows="3">{{ employee.remarks }}</textarea>
                 </div>
             </div>
         </div>
