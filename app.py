@@ -183,7 +183,7 @@ def dashboard():
     sort_order = { 'Vacant': -1, 'Active': 0, 'On Leave': 1, 'Vacation': 2, 'Resigned': 3, 'Terminated': 4, 'Shifted-out': 98, 'Ex-Employee': 99 }
     employees = sorted(
         employees_query.all(),
-        key=lambda item: (sort_order.get(item.status, 100), item.room, item.name)
+        key=lambda item: (sort_order.get(item.status, 100), item.room or '', item.name or '')
     )
 
     return render_template('dashboard.html', 
