@@ -176,7 +176,11 @@ def dashboard():
         employees_query = employees_query.filter(Employee.status.notin_(['Ex-Employee', 'Shifted-out']))
 
     if status_filter:
-        employees_query = employees_query.filter_by(status=status_filter)
+        if status_filter == 'Resigned_Or_Terminated':
+            employees_query = employees_query.filter(or_(Employee.status == 'Resigned', Employee.status == 'Terminated'))
+        else:
+            employees_query = employees_query.filter_by(status=status_filter)
+
     if location_filter:
         employees_query = employees_query.filter_by(location=location_filter)
         
