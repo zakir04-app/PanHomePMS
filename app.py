@@ -109,7 +109,6 @@ class AMCsService(db.Model):
     duration = db.Column(db.String(50))
     remaining_days = db.Column(db.Integer)
     attached_file = db.Column(db.String(255))
-
 # --- Login Manager Setup ---
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -119,7 +118,7 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return db.session.get(AppUser, int(user_id))
 
-# --- Main Routes ---
+# --- Main & User Auth Routes ---
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -143,6 +142,7 @@ def login():
 @login_required
 def logout():
     logout_user()
+    flash("You have been logged out successfully.", "success")
     return redirect(url_for('login'))
 
 @app.route('/forgot_password')
@@ -150,6 +150,7 @@ def forgot_password():
     flash("Please contact your IT administrator to reset your password.", "info")
     return redirect(url_for('login'))
 
+# --- Dashboard ---
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -194,6 +195,7 @@ def dashboard():
                            total_on_vacation=total_on_vacation, total_resigned_terminated=total_resigned_terminated,
                            employees=employees, query=query, location_summary=location_summary)
 
+# --- Staff & Location Management Routes ---
 @app.route('/add_staff', methods=['GET', 'POST'])
 @login_required
 def add_staff():
@@ -297,7 +299,7 @@ def add_staff():
     vacant_beds_query = Employee.query.filter_by(status='Vacant').order_by(Employee.accommodation_name, Employee.room).all()
     vacant_beds_list = [{'id': bed.id, 'accommodation_name': bed.accommodation_name, 'room': bed.room, 'emp_id': bed.emp_id} for bed in vacant_beds_query]
     
-    locations_query = db.session.query(Employee.location).filter(Employee.location.isnot(None)).distinct().order_by(Employee.location).all()
+    locations_query = db.session.query(Camp.location).filter(Camp.location.isnot(None)).distinct().order_by(Camp.location).all()
     locations = [loc[0] for loc in locations_query if loc[0]]
 
     nationalities = ['Afghan', 'Albanian', 'Algerian', 'American', 'Andorran', 'Angolan', 'Argentinean', 'Armenian', 'Australian', 'Austrian', 'Azerbaijani', 'Bahamian', 'Bahraini', 'Bangladeshi', 'Barbadian', 'Belarusian', 'Belgian', 'Belizean', 'Beninese', 'Bhutanese', 'Bolivian', 'Bosnian', 'Brazilian', 'British', 'Bruneian', 'Bulgarian', 'Burkinabe', 'Burmese', 'Burundian', 'Cambodian', 'Cameroonian', 'Canadian', 'Cape Verdean', 'Central African', 'Chadian', 'Chilean', 'Chinese', 'Colombian', 'Comoran', 'Congolese', 'Costa Rican', 'Croatian', 'Cuban', 'Cypriot', 'Czech', 'Danish', 'Djibouti', 'Dominican', 'Dutch', 'East Timorese', 'Ecuadorean', 'Egyptian', 'Emirati', 'Equatorial Guinean', 'Eritrean', 'Estonian', 'Ethiopian', 'Fijian', 'Filipino', 'Finnish', 'French', 'Gabonese', 'Gambian', 'Georgian', 'German', 'Ghanaian', 'Greek', 'Grenadian', 'Guatemalan', 'Guinean', 'Guyanese', 'Haitian', 'Honduran', 'Hungarian', 'Icelander', 'Indian', 'Indonesian', 'Iranian', 'Iraqi', 'Irish', 'Israeli', 'Italian', 'Ivorian', 'Jamaican', 'Japanese', 'Jordanian', 'Kazakhstani', 'Kenyan', 'Kuwaiti', 'Kyrgyz', 'Laotian', 'Latvian', 'Lebanese', 'Liberian', 'Libyan', 'Lithuanian', 'Luxembourger', 'Macedonian', 'Malagasy', 'Malawian', 'Malaysian', 'Maldivan', 'Malian', 'Maltese', 'Mauritanian', 'Mauritian', 'Mexican', 'Moldovan', 'Monacan', 'Mongolian', 'Montenegrin', 'Moroccan', 'Mozambican', 'Namibian', 'Nauruan', 'Nepalese', 'New Zealander', 'Nicaraguan', 'Nigerian', 'Nigerien', 'North Korean', 'Norwegian', 'Omani', 'Pakistani', 'Palauan', 'Panamanian', 'Paraguayan', 'Peruvian', 'Polish', 'Portuguese', 'Qatari', 'Romanian', 'Russian', 'Rwandan', 'Salvadoran', 'Samoan', 'San Marinese', 'Sao Tomean', 'Saudi', 'Senegalese', 'Serbian', 'Seychellois', 'Sierra Leonean', 'Singaporean', 'Slovak', 'Slovenian', 'Solomon Islander', 'Somali', 'South African', 'South Korean', 'Spanish', 'Sri Lankan', 'Sudanese', 'Surinamer', 'Swazi', 'Swedish', 'Swiss', 'Syrian', 'Taiwanese', 'Tajik', 'Tanzanian', 'Thai', 'Togolese', 'Tongan', 'Trinidadian/Tobagonian', 'Tunisian', 'Turkish', 'Turkmen', 'Tuvaluan', 'Ugandan', 'Ukrainian', 'Uruguayan', 'Uzbekistani', 'Venezuelan', 'Vietnamese', 'Yemeni', 'Zambian', 'Zimbabwean']
@@ -383,7 +385,7 @@ def edit_employee(emp_id):
     vacant_beds_query = Employee.query.filter_by(status='Vacant').order_by(Employee.accommodation_name, Employee.room).all()
     vacant_beds_list = [{'id': bed.id, 'accommodation_name': bed.accommodation_name, 'room': bed.room, 'emp_id': bed.emp_id} for bed in vacant_beds_query]
     
-    locations_query = db.session.query(Employee.location).filter(Employee.location.isnot(None)).distinct().order_by(Employee.location).all()
+    locations_query = db.session.query(Camp.location).filter(Camp.location.isnot(None)).distinct().order_by(Camp.location).all()
     locations = [loc[0] for loc in locations_query if loc[0]]
     
     nationalities = ['Afghan', 'Albanian', 'Algerian', 'American', 'Andorran', 'Angolan', 'Argentinean', 'Armenian', 'Australian', 'Austrian', 'Azerbaijani', 'Bahamian', 'Bahraini', 'Bangladeshi', 'Barbadian', 'Belarusian', 'Belgian', 'Belizean', 'Beninese', 'Bhutanese', 'Bolivian', 'Bosnian', 'Brazilian', 'British', 'Bruneian', 'Bulgarian', 'Burkinabe', 'Burmese', 'Burundian', 'Cambodian', 'Cameroonian', 'Canadian', 'Cape Verdean', 'Central African', 'Chadian', 'Chilean', 'Chinese', 'Colombian', 'Comoran', 'Congolese', 'Costa Rican', 'Croatian', 'Cuban', 'Cypriot', 'Czech', 'Danish', 'Djibouti', 'Dominican', 'Dutch', 'East Timorese', 'Ecuadorean', 'Egyptian', 'Emirati', 'Equatorial Guinean', 'Eritrean', 'Estonian', 'Ethiopian', 'Fijian', 'Filipino', 'Finnish', 'French', 'Gabonese', 'Gambian', 'Georgian', 'German', 'Ghanaian', 'Greek', 'Grenadian', 'Guatemalan', 'Guinean', 'Guyanese', 'Haitian', 'Honduran', 'Hungarian', 'Icelander', 'Indian', 'Indonesian', 'Iranian', 'Iraqi', 'Irish', 'Israeli', 'Italian', 'Ivorian', 'Jamaican', 'Japanese', 'Jordanian', 'Kazakhstani', 'Kenyan', 'Kuwaiti', 'Kyrgyz', 'Laotian', 'Latvian', 'Lebanese', 'Liberian', 'Libyan', 'Lithuanian', 'Luxembourger', 'Macedonian', 'Malagasy', 'Malawian', 'Malaysian', 'Maldivan', 'Malian', 'Maltese', 'Mauritanian', 'Mauritian', 'Mexican', 'Moldovan', 'Monacan', 'Mongolian', 'Montenegrin', 'Moroccan', 'Mozambican', 'Namibian', 'Nauruan', 'Nepalese', 'New Zealander', 'Nicaraguan', 'Nigerian', 'Nigerien', 'North Korean', 'Norwegian', 'Omani', 'Pakistani', 'Palauan', 'Panamanian', 'Paraguayan', 'Peruvian', 'Polish', 'Portuguese', 'Qatari', 'Romanian', 'Russian', 'Rwandan', 'Salvadoran', 'Samoan', 'San Marinese', 'Sao Tomean', 'Saudi', 'Senegalese', 'Serbian', 'Seychellois', 'Sierra Leonean', 'Singaporean', 'Slovak', 'Slovenian', 'Solomon Islander', 'Somali', 'South African', 'South Korean', 'Spanish', 'Sri Lankan', 'Sudanese', 'Surinamer', 'Swazi', 'Swedish', 'Swiss', 'Syrian', 'Taiwanese', 'Tajik', 'Tanzanian', 'Thai', 'Togolese', 'Tongan', 'Trinidadian/Tobagonian', 'Tunisian', 'Turkish', 'Turkmen', 'Tuvaluan', 'Ugandan', 'Ukrainian', 'Uruguayan', 'Uzbekistani', 'Venezuelan', 'Vietnamese', 'Yemeni', 'Zambian', 'Zimbabwean']
@@ -398,6 +400,81 @@ def edit_employee(emp_id):
         meal_times=meal_times, statuses=statuses,
         accommodations=accommodations, vacant_beds=vacant_beds_list,
         locations=locations)
+
+@app.route('/locations', methods=['GET', 'POST'])
+@login_required
+def locations():
+    if request.method == 'POST':
+        new_location_name = request.form.get('location_name', '').strip()
+        if new_location_name:
+            existing = Camp.query.filter(func.lower(Camp.location) == func.lower(new_location_name)).first()
+            if existing:
+                flash('This location already exists.', 'warning')
+            else:
+                placeholder_name = f"Camp at {new_location_name}"
+                counter = 1
+                while Camp.query.filter_by(name=placeholder_name).first():
+                    placeholder_name = f"Camp at {new_location_name} ({counter})"
+                    counter += 1
+                
+                new_camp = Camp(name=placeholder_name, location=new_location_name)
+                db.session.add(new_camp)
+                db.session.commit()
+                flash(f'Location "{new_location_name}" added successfully.', 'success')
+        else:
+            flash('Location name cannot be empty.', 'danger')
+        return redirect(url_for('locations'))
+
+    camps_with_locations = Camp.query.filter(Camp.location.isnot(None)).order_by(Camp.location).all()
+    return render_template('locations.html', camps=camps_with_locations)
+
+@app.route('/locations/edit/<int:camp_id>', methods=['GET', 'POST'])
+@login_required
+def edit_location(camp_id):
+    camp_to_edit = db.session.get(Camp, camp_id)
+    if not camp_to_edit:
+        flash('Location not found.', 'danger')
+        return redirect(url_for('locations'))
+    
+    old_location = camp_to_edit.location
+
+    if request.method == 'POST':
+        new_location = request.form.get('location_name', '').strip()
+        if not new_location:
+            flash('Location name cannot be empty.', 'danger')
+            return redirect(url_for('edit_location', camp_id=camp_id))
+
+        existing = Camp.query.filter(func.lower(Camp.location) == func.lower(new_location)).first()
+        if existing and existing.id != camp_id:
+            flash(f'Location "{new_location}" already exists.', 'warning')
+        else:
+            Employee.query.filter_by(location=old_location).update({'location': new_location})
+            camp_to_edit.location = new_location
+            db.session.commit()
+            flash('Location updated successfully.', 'success')
+            return redirect(url_for('locations'))
+
+    return render_template('edit_location.html', camp=camp_to_edit)
+
+@app.route('/locations/delete/<int:camp_id>', methods=['POST'])
+@login_required
+def delete_location(camp_id):
+    camp_to_delete = db.session.get(Camp, camp_id)
+    if not camp_to_delete:
+        flash('Location not found.', 'danger')
+        return redirect(url_for('locations'))
+
+    employees_at_location = Employee.query.filter_by(location=camp_to_delete.location).count()
+    if employees_at_location > 0:
+        flash(f'Cannot delete "{camp_to_delete.location}" because it is still assigned to {employees_at_location} employee(s).', 'danger')
+    else:
+        db.session.delete(camp_to_delete)
+        db.session.commit()
+        flash(f'Location "{camp_to_delete.location}" has been deleted.', 'success')
+    
+    return redirect(url_for('locations'))
+
+# --- Data Management ---
 @app.route('/data', methods=['GET', 'POST'])
 @login_required
 def data_management():
@@ -405,6 +482,7 @@ def data_management():
         download_type = request.form.get('download_type')
         filter_value = request.form.get('filter_value')
         employees_query = Employee.query
+        
         if download_type and filter_value:
             if download_type == 'location':
                 employees_query = employees_query.filter(Employee.location == filter_value)
@@ -412,6 +490,9 @@ def data_management():
                 employees_query = employees_query.filter(Employee.status == filter_value)
             elif download_type == 'accommodation':
                 employees_query = employees_query.filter(Employee.accommodation_name == filter_value)
+            elif download_type == 'nationality':
+                employees_query = employees_query.filter(Employee.nationality == filter_value)
+        
         employees_df = pd.read_sql(employees_query.statement, db.engine)
         buffer = io.BytesIO()
         employees_df.to_excel(buffer, index=False)
@@ -419,19 +500,25 @@ def data_management():
         return send_file(buffer, as_attachment=True, download_name='employee_data.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
     active_statuses = ['Active', 'Vacation', 'On Leave', 'Resigned', 'Terminated']
+    
     locations_query = db.session.query(Employee.location).filter(Employee.location.isnot(None)).distinct().order_by(Employee.location).all()
     statuses_query = db.session.query(Employee.status).filter(Employee.status.isnot(None)).distinct().order_by(Employee.status).all()
     accommodations_query = Camp.query.order_by(Camp.name).all()
+    nationalities_query = db.session.query(Employee.nationality).filter(Employee.nationality.isnot(None)).distinct().order_by(Employee.nationality).all()
+
     accommodations_list = [{'name': camp.name} for camp in accommodations_query]
     designation_summary = db.session.query(Employee.designation, func.count(Employee.id)).filter(Employee.status.in_(active_statuses)).group_by(Employee.designation).order_by(func.count(Employee.id).desc()).all()
     nationality_summary = db.session.query(Employee.nationality, func.count(Employee.id)).filter(Employee.status.in_(active_statuses)).group_by(Employee.nationality).order_by(func.count(Employee.id).desc()).all()
+
     return render_template('data.html', 
                            locations=[loc[0] for loc in locations_query if loc[0]],
                            statuses=[s[0] for s in statuses_query if s[0]],
                            accommodations=accommodations_list,
+                           nationalities=[nat[0] for nat in nationalities_query if nat[0]],
                            designation_summary=designation_summary,
                            nationality_summary=nationality_summary)
 
+# --- Inventory ---
 @app.route('/inventory')
 @login_required
 def inventory_dashboard():
@@ -538,12 +625,66 @@ def inventory_transactions(transaction_type):
     transactions = InventoryTransaction.query.filter_by(type=transaction_type).order_by(InventoryTransaction.date.desc()).all()
     return render_template('inventory_transactions.html', transactions=transactions, transaction_type=transaction_type.title())
 
-@app.route('/maintenance')
+# --- Maintenance ---
+@app.route('/download/maintenance_report')
+@login_required
+def download_maintenance_report():
+    reports = MaintenanceReport.query.order_by(MaintenanceReport.report_date.desc()).all()
+    data = [{
+        'Block': r.block,
+        'Section': r.section,
+        'Report Date': r.report_date,
+        'Details': r.details,
+        'Status': r.status,
+        'Concern': r.concern,
+        'Risk Level': r.risk,
+        'Remarks': r.remarks
+    } for r in reports]
+    df = pd.DataFrame(data)
+    
+    buffer = io.BytesIO()
+    df.to_excel(buffer, index=False, sheet_name='Maintenance Reports')
+    buffer.seek(0)
+    
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name='maintenance_report.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+@app.route('/maintenance', methods=['GET', 'POST'])
 @login_required
 def maintenance_report():
+    if request.method == 'POST':
+        if 'file' in request.files and request.files['file'].filename != '':
+            file = request.files['file']
+            if file and file.filename.endswith(('.xlsx', '.xls', '.csv')):
+                try:
+                    read_method = pd.read_excel if file.filename.endswith(('.xlsx', '.xls')) else pd.read_csv
+                    df = read_method(file, dtype=str).fillna('N/A')
+                    for _, row in df.iterrows():
+                        new_report = MaintenanceReport(
+                            block=row.get('Block', 'N/A'),
+                            section=row.get('Section', 'N/A'),
+                            report_date=row.get('Report Date', datetime.now().strftime('%Y-%m-%d')),
+                            details=row.get('Details', 'N/A'),
+                            status=row.get('Status', 'Open'),
+                            concern=row.get('Concern', 'N/A'),
+                            risk=row.get('Risk', 'Low'),
+                            remarks=row.get('Remarks', 'N/A')
+                        )
+                        db.session.add(new_report)
+                    db.session.commit()
+                    flash('Maintenance reports uploaded successfully!', 'success')
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'File upload failed: {e}', 'danger')
+            else:
+                flash('Invalid file format. Please upload an Excel or CSV file.', 'danger')
+        return redirect(url_for('maintenance_report'))
+
     reports = MaintenanceReport.query.order_by(MaintenanceReport.report_date.desc()).all()
     return render_template('maintenance_report.html', reports=reports)
-
 @app.route('/add_maintenance', methods=['GET', 'POST'])
 @login_required
 def add_maintenance():
@@ -598,9 +739,64 @@ def view_maintenance_report(report_id):
     report = db.session.get(MaintenanceReport, report_id)
     return render_template('view_maintenance_report.html', report=report)
 
-@app.route('/amcs')
+# --- AMCs ---
+@app.route('/download/amcs_report')
+@login_required
+def download_amcs_report():
+    amcs = AMCsService.query.order_by(AMCsService.date.desc()).all()
+    data = [{
+        'Service ID': a.service_id,
+        'Date': a.date,
+        'Type': a.type,
+        'Supplier Name': a.supplier_name,
+        'Start Date': a.start_date,
+        'End Date': a.end_date,
+        'Remarks': a.remarks
+    } for a in amcs]
+    df = pd.DataFrame(data)
+
+    buffer = io.BytesIO()
+    df.to_excel(buffer, index=False, sheet_name='AMCs Services')
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name='amcs_services_report.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+@app.route('/amcs', methods=['GET', 'POST'])
 @login_required
 def amcs_dashboard():
+    if request.method == 'POST':
+        if 'file' in request.files and request.files['file'].filename != '':
+            file = request.files['file']
+            if file and file.filename.endswith(('.xlsx', '.xls', '.csv')):
+                try:
+                    read_method = pd.read_excel if file.filename.endswith(('.xlsx', '.xls')) else pd.read_csv
+                    df = read_method(file, dtype=str).fillna('N/A')
+                    for _, row in df.iterrows():
+                        start_date = pd.to_datetime(row.get('Start Date')).strftime('%Y-%m-%d')
+                        end_date = pd.to_datetime(row.get('End Date')).strftime('%Y-%m-%d')
+                        new_amc = AMCsService(
+                            service_id=row.get('Service ID', 'N/A'),
+                            date=row.get('Date', datetime.now().strftime('%Y-%m-%d')),
+                            type=row.get('Type', 'N/A'),
+                            supplier_name=row.get('Supplier Name', 'N/A'),
+                            start_date=start_date,
+                            end_date=end_date,
+                            remarks=row.get('Remarks', 'N/A')
+                        )
+                        db.session.add(new_amc)
+                    db.session.commit()
+                    flash('AMCs services uploaded successfully!', 'success')
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'File upload failed: {e}', 'danger')
+            else:
+                flash('Invalid file format. Please upload an Excel or CSV file.', 'danger')
+        return redirect(url_for('amcs_dashboard'))
+
     amcs_list = AMCsService.query.all()
     try:
         for amc in amcs_list:
@@ -669,6 +865,7 @@ def view_amcs(amc_id):
     amc = db.session.get(AMCsService, amc_id)
     return render_template('view_amcs.html', amc=amc)
 
+# --- Settings ---
 @app.route('/settings')
 @login_required
 def settings_dashboard():
@@ -740,11 +937,31 @@ def edit_user(user_id):
         return redirect(url_for('settings_dashboard'))
     return render_template('edit_user.html', user=user_to_edit)
 
+@app.route('/settings/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    if not current_user.is_admin():
+        flash("You do not have permission to access this page.", 'danger')
+        return redirect(url_for('dashboard'))
+    if user_id == current_user.id:
+        flash("You cannot delete your own account.", 'danger')
+        return redirect(url_for('settings_dashboard'))
+    user_to_delete = db.session.get(AppUser, user_id)
+    if user_to_delete:
+        db.session.delete(user_to_delete)
+        db.session.commit()
+        flash("User deleted successfully!", 'success')
+    else:
+        flash("User not found.", "danger")
+    return redirect(url_for('settings_dashboard'))
+
+# --- File Handling ---
 @app.route('/uploads/<path:filename>')
 @login_required
 def download_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+# --- Temporary Database Setup ---
 @app.route('/create-tables/<string:secret_key>')
 def create_tables(secret_key):
     if secret_key != 'SETUP-DATABASE-NOW':

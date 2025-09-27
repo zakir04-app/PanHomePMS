@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Location{% endblock %}
+
+{% block content %}
+<style>
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-secondary); }
+    .form-group input { 
+        width: 100%; 
+        padding: 10px; 
+        border: 1px solid var(--border-color); 
+        border-radius: 6px; 
+        box-sizing: border-box; 
+    }
+    button { 
+        background-color: var(--accent-color); 
+        color: white; 
+        border: none; 
+        padding: 12px 20px; 
+        border-radius: 6px; 
+        font-weight: 500; 
+        cursor: pointer;
+    }
+</style>
+
+<h1>Edit Location</h1>
+
+<div class="card">
+    <form method="POST">
+        <div class="form-group">
+            <label for="location_name">Location Name</label>
+            <input type="text" id="location_name" name="location_name" value="{{ camp.location }}" required>
+        </div>
+        <button type="submit">Update Location</button>
+    </form>
+</div>
+{% endblock %}

@@ -65,6 +65,7 @@
                     <option value="accommodation">Accommodation</option>
                     <option value="location">Location</option>
                     <option value="status">Status</option>
+                    <option value="nationality">Nationality</option>
                 </select>
             </div>
             <div class="form-group">
@@ -119,7 +120,8 @@
     const filterOptions = {
         accommodation: {{ accommodations | tojson | safe }},
         location: {{ locations | tojson | safe }},
-        status: {{ statuses | tojson | safe }}
+        status: {{ statuses | tojson | safe }},
+        nationality: {{ nationalities | tojson | safe }}
     };
 
     const typeSelect = document.getElementById('download_type');
@@ -127,26 +129,24 @@
 
     typeSelect.addEventListener('change', function() {
         const selectedType = this.value;
-        valueSelect.innerHTML = ''; // Clear previous options
+        valueSelect.innerHTML = ''; 
 
         if (selectedType && filterOptions[selectedType]) {
             let options = filterOptions[selectedType];
             
-            // Accommodations are objects, others are strings
+            valueSelect.add(new Option('-- Select Value --', ''));
+
             if (selectedType === 'accommodation') {
                  options.forEach(function(item) {
-                    const option = new Option(item.name, item.name);
-                    valueSelect.add(option);
+                    valueSelect.add(new Option(item.name, item.name));
                 });
             } else {
                 options.forEach(function(item) {
-                    const option = new Option(item, item);
-                    valueSelect.add(option);
+                    valueSelect.add(new Option(item, item));
                 });
             }
         } else {
-            const option = new Option('-- Select Filter First --', '');
-            valueSelect.add(option);
+            valueSelect.add(new Option('-- Select Filter First --', ''));
         }
     });
 </script>
