@@ -75,11 +75,12 @@ def create_app():
             return f"An error occurred: {e}"
             
     return app
-
+# Global application instance defined by calling the factory function.
+# Gunicorn executes this line and finds the 'app' variable it needs.
+app = create_app() 
 if __name__ == '__main__':
-    app = create_app()
+    # When running locally (python app.py), run initial setup and start server
     with app.app_context():
-        # Ensure tables and initial admin exist on run
         db.create_all()
         if not AppUser.query.filter_by(username='admin').first():
             new_admin = AppUser(username='admin', email='admin@panhome.com', mobile='N/A', password='admin123', role='Admin')
