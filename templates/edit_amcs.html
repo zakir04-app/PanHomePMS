@@ -22,7 +22,7 @@
 <h1>Edit AMC Service</h1>
 
 <div class="card">
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('amcs.edit_amcs', amc_id=amc.id) }}" enctype="multipart/form-data">
         <div class="form-grid">
             <div class="form-group">
                 <label for="service_id">Service ID</label>

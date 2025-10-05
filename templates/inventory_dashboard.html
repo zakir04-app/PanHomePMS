@@ -20,8 +20,9 @@
 <div class="page-header">
     <h1>Inventory Dashboard</h1>
     <div class="actions">
-        <a href="{{ url_for('incoming_inventory') }}" class="btn-primary">Record Incoming Stock</a>
-        <a href="{{ url_for('outgoing_inventory') }}" class="btn-secondary">Record Outgoing Stock</a>
+        <a href="{{ url_for('inventory.download_inventory_history') }}" class="btn-secondary btn-info">Download Full History</a>
+        <a href="{{ url_for('inventory.incoming_inventory') }}" class="btn-primary">Record Incoming Stock</a>
+        <a href="{{ url_for('inventory.outgoing_inventory') }}" class="btn-secondary">Record Outgoing Stock</a>
     </div>
 </div>
 
@@ -43,7 +44,7 @@
 <div class="card">
     <div class="page-header" style="margin-bottom: 0;">
         <h2>Current Inventory</h2>
-        <a href="{{ url_for('add_inventory_item') }}" class="btn-secondary">Add New Item Type</a>
+        <a href="{{ url_for('inventory.add_inventory_item') }}" class="btn-secondary">Add New Item Type</a>
     </div>
     <table class="data-table">
         <thead>
@@ -66,8 +67,8 @@
         </tbody>
     </table>
     <div style="margin-top: 20px; text-align: right;">
-        <a href="{{ url_for('inventory_transactions', transaction_type='Incoming') }}">View Incoming History</a> |
-        <a href="{{ url_for('inventory_transactions', transaction_type='Outgoing') }}">View Outgoing History</a>
+        <a href="{{ url_for('inventory.inventory_transactions', transaction_type='Incoming') }}">View Incoming History</a> |
+        <a href="{{ url_for('inventory.inventory_transactions', transaction_type='Outgoing') }}">View Outgoing History</a>
     </div>
 </div>
 {% endblock %}

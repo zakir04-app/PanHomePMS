@@ -5,7 +5,18 @@
 {% block content %}
 <style>
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .btn-primary { background-color: var(--accent-color); color: white; padding: 10px 18px; text-decoration: none; border-radius: 6px; font-weight: 500; }
+    .header-actions { display: flex; gap: 10px; }
+    .btn-primary { 
+        background-color: var(--accent-color); 
+        color: white; 
+        padding: 10px 18px; 
+        text-decoration: none; 
+        border-radius: 6px; 
+        font-weight: 500; 
+        border: none; 
+        cursor: pointer; 
+    } 
+    .btn-secondary { background-color: #6c757d; color: white; padding: 10px 18px; text-decoration: none; border-radius: 6px; font-weight: 500; border: none; cursor: pointer; }
     .data-table { width: 100%; border-collapse: collapse; }
     .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
     .data-table th { background-color: #f9fafb; font-weight: 600; }
@@ -13,38 +24,48 @@
     /* Styles for the Upload Form */
     .form-group { margin-bottom: 20px; }
     .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-secondary); }
-    .upload-area { display: flex; align-items: center; gap: 15px; }
+    .upload-area { 
+        display: flex; 
+        align-items: center; 
+        gap: 15px; 
+    }
     
+    /* Custom style for the 'Choose File' label to match primary buttons */
     .file-upload-label {
         display: inline-flex;
         align-items: center;
         gap: 8px;
         padding: 10px 18px;
-        background-color: ver-(--text-secondary);
-        color: var(--card-bg, #fff);
+        background-color: var(--accent-color); /* Match primary button color */
+        color: white; /* White text */
         border-radius: 6px;
         cursor: pointer;
         font-weight: 500;
         transition: background-color 0.2s;
     }
     .file-upload-label:hover {
-        background-color: var(--text-primary);
+        background-color: #4338ca; /* Darker hover effect (Example color) */
     }
+    .file-upload-label svg {
+        fill: white;
+    }
+    
+    /* Styling the file name display area */
     #file-name-display {
-        font-style: italic;
+        flex-grow: 1; /* Allows it to take up remaining space */
+        padding: 10px 0;
+        border: none;
         color: var(--text-secondary);
+        font-style: italic;
     }
-<style>
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .header-actions { display: flex; gap: 10px; }
-    .btn-primary { background-color: var(--accent-color); color: white; padding: 10px 18px; text-decoration: none; border-radius: 6px; font-weight: 500; }
-    .btn-secondary { background-color: #6c757d; color: white; padding: 10px 18px; text-decoration: none; border-radius: 6px; font-weight: 500; }
 </style>
 
 <div class="page-header">
-    <h1>AMCs Services</h1>
-    <a href="{{ url_for('download_amcs_report') }}" class="btn-secondary">Download Report</a>
-    <a href="{{ url_for('add_amcs') }}" class="btn-primary">Add New AMCs</a>
+    <h2>AMCs Services</h2>
+    <div class="header-actions">
+        <a href="{{ url_for('amcs.add_amcs') }}" class="btn-primary">Add New AMCs</a>
+        <a href="{{ url_for('amcs.download_amcs_report') }}" class="btn-secondary">Download Report</a>
+    </div>
 </div>
 
 <div class="card">
@@ -66,10 +87,16 @@
                 <td>{{ amc.type }}</td>
                 <td>{{ amc.supplier_name }}</td>
                 <td>{{ amc.end_date }}</td>
-                <td>{{ amc.remaining_days }}</td>
                 <td>
-                    <a href="{{ url_for('view_amcs', amc_id=amc.id) }}">View</a> |
-                    <a href="{{ url_for('edit_amcs', amc_id=amc.id) }}">Edit</a>
+                    {% if amc.remaining_days < 90 %}
+                        <span style="color: red; font-weight: bold;">{{ amc.remaining_days }}</span>
+                    {% else %}
+                        {{ amc.remaining_days }}
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('amcs.view_amcs', amc_id=amc.id) }}">View</a> |
+                    <a href="{{ url_for('amcs.edit_amcs', amc_id=amc.id) }}">Edit</a>
                 </td>
             </tr>
             {% else %}
@@ -83,7 +110,7 @@
 
 <div class="card">
     <h2>Upload AMCs from Excel File</h2>
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('amcs.amcs_dashboard') }}" enctype="multipart/form-data">
         <div class="form-group">
             <label>Select Excel File</label>
             <div class="upload-area">
@@ -101,4 +128,11 @@
         <button type="submit" class="btn-primary">Upload File</button>
     </form>
 </div>
+<script>
+    // Script to display the selected file name
+    document.getElementById('file').addEventListener('change', function() {
+        const fileName = this.files[0] ? this.files[0].name : 'No file selected';
+        document.getElementById('file-name-display').textContent = fileName;
+    });
+</script>
 {% endblock %}

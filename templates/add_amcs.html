@@ -22,7 +22,7 @@
 <h1>Add New AMC Service</h1>
 
 <div class="card">
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('amcs.add_amcs') }}" enctype="multipart/form-data">
         <div class="form-grid">
             <div class="form-group">
                 <label for="service_id">Service ID</label>

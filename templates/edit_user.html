@@ -17,7 +17,7 @@
 <h1>Edit User: {{ user.username }}</h1>
 
 <div class="card">
-    <form method="POST">
+    <form method="POST" action="{{ url_for('settings.edit_user', user_id=user.id) }}">
         <div class="form-grid">
             <div class="form-group">
                 <label for="username">Username</label>
@@ -34,8 +34,9 @@
             <div class="form-group">
                 <label for="role">Role</label>
                 <select id="role" name="role">
-                    <option value="user" {% if user.role == 'user' %}selected{% endif %}>User</option>
-                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                    {% for role in roles %}
+                        <option value="{{ role }}" {% if user.role == role %}selected{% endif %}>{{ role.title() }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="form-group full-width">
@@ -45,6 +46,7 @@
         </div>
         <div class="form-actions">
             <button type="submit">Update User</button>
+            <a href="{{ url_for('settings.edit_user_permissions', user_id=user.id) }}" class="btn-edit">Manage Permissions</a>
         </div>
     </form>
 </div>
@@ -52,7 +54,7 @@
 <div class="card">
     <h2>Delete User</h2>
     <p>This action cannot be undone. This will permanently delete the user account.</p>
-    <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete this user?');">
+    <form action="{{ url_for('settings.delete_user', user_id=user.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete this user?');">
         <button type="submit" class="btn-danger">Delete User Account</button>
     </form>
 </div>

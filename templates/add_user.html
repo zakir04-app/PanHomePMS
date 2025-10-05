@@ -16,7 +16,7 @@
 <h1>Add New User</h1>
 
 <div class="card">
-    <form method="POST">
+    <form method="POST" action="{{ url_for('settings.add_user') }}">
         <div class="form-grid">
             <div class="form-group">
                 <label for="username">Username</label>
@@ -33,8 +33,9 @@
             <div class="form-group">
                 <label for="role">Role</label>
                 <select id="role" name="role">
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
+                    {% for role in roles %}
+                        <option value="{{ role }}">{{ role.title() }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="form-group full-width">

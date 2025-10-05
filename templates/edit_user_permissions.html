@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Permissions for {{ user.username }}{% endblock %}
+
+{% block content %}
+<style>
+    .permission-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+    }
+    .permission-box {
+        border: 1px solid var(--border-color);
+        padding: 15px;
+        border-radius: 8px;
+    }
+    .permission-box h3 {
+        margin-top: 0;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+        font-size: 1.1rem;
+        color: var(--accent-color);
+    }
+    .checkbox-list label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 400;
+        color: var(--text-primary);
+    }
+    .form-actions {
+        margin-top: 20px;
+        text-align: right;
+    }
+    button {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+</style>
+
+<h1>Permissions for {{ user.username }} ({{ user.role }})</h1>
+
+<div class="card">
+    <form method="POST" action="{{ url_for('settings.edit_user_permissions', user_id=user.id) }}">
+        {% if user.role == 'Admin' %}
+        <div class="alert alert-info">Admin has full access to all features and locations by default. Permissions below are ignored.</div>
+        {% endif %}
+
+        <div class="permission-grid">
+            
+            <div class="permission-box">
+                <h3>1. Location/Accommodation Access (Edit/Delete)</h3>
+                <p class="text-secondary">Users can *edit/delete* staff in **only** the selected locations below. All locations are viewable.</p>
+                <div class="checkbox-list">
+                    {% for location in all_locations %}
+                    <label>
+                        <input type="checkbox" name="allowed_locations" value="{{ location }}" 
+                                {% if location in user_allowed_locations %}checked{% endif %}>
+                        {{ location }}
+                    </label>
+                    {% else %}
+                    <p>No locations have been defined yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="permission-box">
+                <h3>2. Global Feature Access (Edit)</h3>
+                <p class="text-secondary">Grants full edit/add permissions for non-location specific modules.</p>
+                <div class="checkbox-list">
+                    {% for code, description in feature_permissions.items() %}
+                    <label>
+                        <input type="checkbox" name="feature_permissions" value="{{ code }}"
+                                {% if code in user_permissions %}checked{% endif %}>
+                        <strong>{{ code }}:</strong> {{ description }}
+                    </label>
+                    {% endfor %}
+                </div>
+                
+                <h3 style="margin-top: 20px;">3. Theme Access</h3>
+                <div class="alert alert-info">All users have permission to change their own theme, font style, and size in settings.</div>
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">Save Permissions</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

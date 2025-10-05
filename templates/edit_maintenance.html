@@ -27,10 +27,10 @@
     }
 </style>
 
-<h1>Edit Maintenance Report</h1>
+<h1>Edit Maintenance Report #{{ report.id }}</h1>
 
 <div class="card">
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('maintenance.edit_maintenance', report_id=report.id) }}">
         <div class="form-grid">
             <div class="form-group">
                 <label for="report_date">Report Date</label>
@@ -43,6 +43,7 @@
                     <option value="Closed" {% if report.status == 'Closed' %}selected{% endif %}>Closed</option>
                 </select>
             </div>
+            
             <div class="form-group">
                 <label for="block">Block</label>
                 <input type="text" id="block" name="block" value="{{ report.block }}" required>
@@ -51,10 +52,17 @@
                 <label for="section">Section / Room</label>
                 <input type="text" id="section" name="section" value="{{ report.section }}" required>
             </div>
+
+            <div class="form-group">
+                <label for="closed_date">Closed Date</label>
+                <input type="date" id="closed_date" name="closed_date" value="{{ report.closed_date or '' }}">
+            </div>
+
             <div class="form-group">
                 <label for="concern">Concern / Assigned To</label>
-                <input type="text" id="concern" name="concern" value="{{ report.concern }}">
+                <input type="text" id="concern" name="concern" value="{{ report.concern or '' }}">
             </div>
+            
             <div class="form-group">
                 <label for="risk">Risk Level</label>
                 <select id="risk" name="risk">
@@ -63,16 +71,17 @@
                     <option value="High" {% if report.risk == 'High' %}selected{% endif %}>High</option>
                 </select>
             </div>
+            
             <div class="form-group full-width">
                 <label for="details">Details of Issue</label>
                 <textarea id="details" name="details" rows="4" required>{{ report.details }}</textarea>
             </div>
             <div class="form-group full-width">
                 <label for="remarks">Remarks</label>
-                <textarea id="remarks" name="remarks" rows="3">{{ report.remarks }}</textarea>
+                <textarea id="remarks" name="remarks" rows="3">{{ report.remarks or '' }}</textarea>
             </div>
             <div class="form-group full-width">
-                <label for="attached_file">Attach New File (optional)</label>
+                <label for="attached_file">Attach File (Current: {{ report.attached_file or 'None' }})</label>
                 <input type="file" id="attached_file" name="attached_file">
             </div>
             <div class="form-group full-width form-actions">

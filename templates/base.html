@@ -84,17 +84,23 @@
             <img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Logo" class="logo">
         </div>
         <ul>
-            <li class="{{ 'active' if request.endpoint == 'dashboard' else '' }}"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-            <li class="{{ 'active' if request.endpoint == 'add_staff' else '' }}"><a href="{{ url_for('add_staff') }}">Add Staff</a></li>
-            <li class="{{ 'active' if request.endpoint == 'data_management' else '' }}"><a href="{{ url_for('data_management') }}">Data Management</a></li>
-            <li class="{{ 'active' if request.endpoint == 'inventory_dashboard' else '' }}"><a href="{{ url_for('inventory_dashboard') }}">Inventory</a></li>
-            <li class="{{ 'active' if request.endpoint == 'maintenance_report' else '' }}"><a href="{{ url_for('maintenance_report') }}">Maintenance Report</a></li>
-            <li class="{{ 'active' if request.endpoint == 'amcs_dashboard' else '' }}"><a href="{{ url_for('amcs_dashboard') }}">AMCs Services</a></li>
-            {% if current_user.is_admin() %}
-<li class="{{ 'active' if request.endpoint == 'locations' else '' }}"><a href="{{ url_for('locations') }}">Locations</a></li>
-                <li class="{{ 'active' if 'settings' in request.endpoint else '' }}"><a href="{{ url_for('settings_dashboard') }}">Settings</a></li>
+            <li class="{{ 'active' if request.endpoint == 'dashboard_bp.dashboard' else '' }}"><a href="{{ url_for('dashboard_bp.dashboard') }}">Dashboard</a></li>
+            <li class="{{ 'active' if request.endpoint == 'staff_mgmt.add_staff' else '' }}"><a href="{{ url_for('staff_mgmt.add_staff') }}">Add Staff</a></li>
+            <li class="{{ 'active' if request.endpoint == 'staff_mgmt.data_management' else '' }}"><a href="{{ url_for('staff_mgmt.data_management') }}">Data Management</a></li>
+            <li class="{{ 'active' if request.endpoint == 'inventory.inventory_dashboard' else '' }}"><a href="{{ url_for('inventory.inventory_dashboard') }}">Inventory</a></li>
+            <li class="{{ 'active' if request.endpoint == 'maintenance.maintenance_report' else '' }}"><a href="{{ url_for('maintenance.maintenance_report') }}">Maintenance Report</a></li>
+            <li class="{{ 'active' if request.endpoint == 'amcs.amcs_dashboard' else '' }}"><a href="{{ url_for('amcs.amcs_dashboard') }}">AMCs Services</a></li>
+            
+            {% if current_user.is_authenticated %}
+                {% if current_user.is_admin() %}
+                    <li class="{{ 'active' if request.endpoint == 'staff_mgmt.locations' else '' }}"><a href="{{ url_for('staff_mgmt.locations') }}">Locations</a></li>
+                {% endif %}
+                <li class="{{ 'active' if 'settings.' in request.endpoint else '' }}">
+                    <a href="{{ url_for('settings.settings_dashboard') if current_user.is_admin() else url_for('settings.change_appearance_view') }}">Settings</a>
+                </li>
             {% endif %}
-            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+            
+            <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
         </ul>
     </div>
 

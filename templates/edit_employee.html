@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Edit Details{% endblock %}
+{% block title %}Edit Employee{% endblock %}
 
 {% block content %}
 <style>
@@ -8,144 +8,181 @@
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-secondary); }
     .form-group input, .form-group select, .form-group textarea {
-        width: 100%; padding: 10px; border: 1px solid var(--border-color);
-        border-radius: 6px; box-sizing: border-box;
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        box-sizing: border-box;
     }
     .full-width { grid-column: 1 / -1; }
-    .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
-    button {
-        background-color: var(--accent-color); color: white; border: none;
-        padding: 12px 20px; border-radius: 6px; font-weight: 500; cursor: pointer;
-    }
-    .btn-checkout { background-color: #fdba74; color: #7c2d12; }
-    .btn-shiftout { background-color: #a5b4fc; color: #312e81; }
-    .current-assignment { background-color: var(--main-bg); padding: 15px; border-radius: 8px; }
+    .form-actions { text-align: right; margin-top: 15px; }
+    .action-group { display: flex; gap: 15px; margin-top: 20px; }
+    button { background-color: var(--accent-color); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: 500; cursor: pointer; }
+    .btn-danger { background-color: #dc3545; }
+    .btn-warning { background-color: #ffc107; color: #000; }
+    .btn-success { background-color: #198754; }
 </style>
 
-<h1>Edit: {{ employee.name }} ({{ employee.emp_id }})</h1>
+<h1>Edit Employee / Bed Management (ID: {{ employee.emp_id }})</h1>
 
-<div class="card">
-    <form method="POST">
-        <h2>Employee Details</h2>
-        <div class="form-grid">
-            <div>
+{% if is_awaiting_checkin %}
+    <div class="card">
+        <h2>Assign Room and Check-in</h2>
+        <form method="POST" action="{{ url_for('staff_mgmt.edit_employee', emp_id=employee.emp_id) }}">
+            <input type="hidden" name="checkin_btn" value="1">
+            <div class="form-grid">
                 <div class="form-group">
-                    <label>Current Assignment</label>
-                    <div class="current-assignment">
-                        <strong>Room:</strong> {{ employee.room or 'N/A' }}<br>
-                        <strong>Accommodation:</strong> {{ employee.accommodation_name or 'N/A' }}
-                    </div>
+                    <label for="name">Employee Name</label>
+                    <input type="text" id="name" value="{{ employee.name }}" readonly>
                 </div>
                 <div class="form-group">
+                    <label for="emp_id">EMP ID</label>
+                    <input type="text" id="emp_id" value="{{ employee.emp_id }}" readonly>
+                </div>
+                <div class="form-group full-width">
+                    <label for="vacant_bed_id">Select Vacant Bed / Room to Assign</label>
+                    <select id="vacant_bed_id" name="vacant_bed_id" required>
+                        <option value="">-- Select a Vacant Bed --</option>
+                        {% for bed in vacant_beds %}
+                            <option value="{{ bed.id }}">[{{ bed.accommodation_name }}] Room {{ bed.room }} (Slot ID: {{ bed.emp_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-success">Confirm Check-in & Assign Bed</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card action-group">
+        <form action="{{ url_for('staff_mgmt.edit_employee', emp_id=employee.emp_id) }}" method="POST" onsubmit="return confirm('WARNING: This will permanently mark the employee as Ex-Employee and remove them from Check-in list.');">
+            <button type="submit" name="checkout_btn" value="checkout" class="btn-danger">
+                Final Checkout (From Check-in List)
+            </button>
+        </form>
+    </div>
+
+{% else %}
+    <div class="card">
+        <h2>Employee Details</h2>
+        <form method="POST" action="{{ url_for('staff_mgmt.edit_employee', emp_id=employee.emp_id) }}">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="emp_id">EMP ID</label>
+                    <input type="text" id="emp_id" name="emp_id" value="{{ employee.emp_id }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status" name="status" {% if is_vacant_record %}readonly disabled{% endif %}>
+                        {% for status in statuses %}
+                            <option value="{{ status }}" {% if employee.status == status %}selected{% endif %}>{{ status }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
                     <label for="name">Full Name</label>
-                    <input type="text" id="name" name="name" value="{{ employee.name }}" required>
+                    <input type="text" id="name" name="name" value="{{ employee.name or '' }}" {% if is_vacant_record %}readonly{% endif %} required>
                 </div>
                 <div class="form-group">
                     <label for="designation">Designation</label>
-                    <input type="text" id="designation" name="designation" value="{{ employee.designation }}">
+                    <input type="text" id="designation" name="designation" value="{{ employee.designation or '' }}" {% if is_vacant_record %}readonly{% endif %}>
                 </div>
+                
                 <div class="form-group">
                     <label for="nationality">Nationality</label>
-                    <select id="nationality" name="nationality">
+                    <select id="nationality" name="nationality" {% if is_vacant_record %}readonly disabled{% endif %}>
                         {% for nat in nationalities %}
-                        <option value="{{ nat }}" {% if nat == employee.nationality %}selected{% endif %}>{{ nat }}</option>
+                            <option value="{{ nat }}" {% if employee.nationality == nat %}selected{% endif %}>{{ nat }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                 <div class="form-group">
+                <div class="form-group">
                     <label for="mobile_number">Mobile Number</label>
-                    <input type="text" id="mobile_number" name="mobile_number" value="{{ employee.mobile_number }}">
+                    <input type="text" id="mobile_number" name="mobile_number" value="{{ employee.mobile_number or '' }}" {% if is_vacant_record %}readonly{% endif %}>
                 </div>
-            </div>
-            <div>
-                 <div class="form-group">
-                    <label for="status">Status</label>
-                    <select id="status" name="status">
-                        {% for stat in statuses %}
-                        <option value="{{ stat }}" {% if stat == employee.status %}selected{% endif %}>{{ stat }}</option>
-                        {% endfor %}
-                    </select>
+                
+                <div class="form-group">
+                    <label>Accommodation / Room</label>
+                    <input type="text" value="{{ employee.accommodation_name or '-' }} / {{ employee.room or '-' }}" readonly>
                 </div>
+                
                 <div class="form-group">
                     <label for="location">Location</label>
-                    <select id="location" name="location">
+                    <select id="location" name="location" {% if is_vacant_record %}readonly disabled{% endif %}>
+                        <option value="">-- Select Location --</option>
                         {% for loc in locations %}
-                        <option value="{{ loc }}" {% if loc == employee.location %}selected{% endif %}>{{ loc }}</option>
+                            <option value="{{ loc }}" {% if employee.location == loc %}selected{% endif %}>{{ loc }}</option>
                         {% endfor %}
                     </select>
                 </div>
+
                 <div class="form-group">
                     <label for="food_variety">Food Variety</label>
-                    <select id="food_variety" name="food_variety">
+                    <select id="food_variety" name="food_variety" {% if is_vacant_record %}readonly disabled{% endif %}>
                         {% for fv in food_varieties %}
-                        <option value="{{ fv }}" {% if fv == employee.food_variety %}selected{% endif %}>{{ fv }}</option>
+                            <option value="{{ fv }}" {% if employee.food_variety == fv %}selected{% endif %}>{{ fv }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="meal_time">Meal Time</label>
-                    <select id="meal_time" name="meal_time">
+                    <select id="meal_time" name="meal_time" {% if is_vacant_record %}readonly disabled{% endif %}>
                         {% for mt in meal_times %}
-                        <option value="{{ mt }}" {% if mt == employee.meal_time %}selected{% endif %}>{{ mt }}</option>
+                            <option value="{{ mt }}" {% if employee.meal_time == mt %}selected{% endif %}>{{ mt }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                 <div class="form-group">
+                
+                <div class="form-group full-width">
                     <label for="remarks">Remarks</label>
-                    <textarea id="remarks" name="remarks" rows="3">{{ employee.remarks }}</textarea>
+                    <textarea id="remarks" name="remarks" rows="3" {% if is_vacant_record %}readonly{% endif %}>{{ employee.remarks or '' }}</textarea>
                 </div>
             </div>
-        </div>
-        
-        <hr>
-        <h2>Re-assign to a New Vacant Bed (Optional)</h2>
-        <div class="form-grid">
+
+            <div class="form-actions">
+                <button type="submit">Update Details</button>
+            </div>
+        </form>
+    </div>
+
+    {% if not is_vacant_record and employee.room %}
+    <div class="card">
+        <h2>Shift Employee to New Bed</h2>
+        <form method="POST" action="{{ url_for('staff_mgmt.edit_employee', emp_id=employee.emp_id) }}">
+            <input type="hidden" name="bed_shift_action" value="1"> 
             <div class="form-group">
-                <label for="accommodation_select">Select Accommodation</label>
-                <select id="accommodation_select" class="form-control">
-                    <option value="">-- Select --</option>
-                    {% for acc in accommodations %}
-                    <option value="{{ acc.name }}">{{ acc.name }}</option>
+                <label for="vacant_bed_id">Move {{ employee.name }} to:</label>
+                <select id="vacant_bed_id" name="vacant_bed_id" required>
+                    <option value="">-- Select New Vacant Bed --</option>
+                    {% for bed in vacant_beds %}
+                        <option value="{{ bed.id }}">[{{ bed.accommodation_name }}] Room {{ bed.room }} (Slot ID: {{ bed.emp_id }})</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="form-group">
-                <label for="vacant_bed_id">Select Vacant Bed</label>
-                <select id="vacant_bed_id" name="vacant_bed_id" class="form-control">
-                    <option value="">-- First Select Accommodation --</option>
-                </select>
+            <div class="form-actions">
+                <button type="submit" class="btn-warning">Confirm Bed Shift</button>
             </div>
-        </div>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if not is_vacant_record %}
+    <div class="card action-group">
+        <form action="{{ url_for('staff_mgmt.edit_employee', emp_id=employee.emp_id) }}" method="POST" onsubmit="return confirm('Confirm SHIFT-OUT? This will mark the employee as Awaiting Room and vacate the current bed.');">
+            <button type="submit" name="shiftout_btn" value="shiftout" class="btn-warning">
+                Shift Out (Vacate Room & Await Assignment)
+            </button>
+        </form>
         
-        <div class="form-actions">
-            <div>
-                <button type="submit" name="checkout_btn" class="btn-checkout">Check-Out</button>
-                <button type="submit" name="shiftout_btn" class="btn-shiftout">Shift-Out</button>
-            </div>
-            <button type="submit">Save Changes</button>
-        </div>
-    </form>
-</div>
-
-<script>
-    const vacantBedsData = {{ vacant_beds | tojson }};
-    const accommodationSelect = document.getElementById('accommodation_select');
-    const vacantBedSelect = document.getElementById('vacant_bed_id');
-
-    accommodationSelect.addEventListener('change', function() {
-        const selectedAccommodation = this.value;
-        vacantBedSelect.innerHTML = '<option value="">-- Select a Bed --</option>';
-
-        if (selectedAccommodation) {
-            vacantBedsData.forEach(function(bed) {
-                if (bed.accommodation_name === selectedAccommodation) {
-                    const option = document.createElement('option');
-                    option.value = bed.id;
-                    option.textContent = `${bed.room} (Slot ID: ${bed.emp_id})`;
-                    vacantBedSelect.appendChild(option);
-                }
-            });
-        }
-    });
-</script>
+        <form action="{{ url_for('staff_mgmt.edit_employee', emp_id=employee.emp_id) }}" method="POST" onsubmit="return confirm('Confirm FINAL CHECKOUT? This will mark the employee as Ex-Employee and vacate the room.');">
+            <button type="submit" name="checkout_btn" value="checkout" class="btn-danger">
+                Final Checkout
+            </button>
+        </form>
+    </div>
+    {% endif %}
+    
+{% endif %}
 {% endblock %}
