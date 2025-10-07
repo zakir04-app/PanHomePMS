@@ -9,11 +9,21 @@
     .data-table { width: 100%; border-collapse: collapse; }
     .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
     .data-table th { background-color: #f9fafb; font-weight: 600; }
+    .header-group { display: flex; align-items: center; gap: 20px; }
 </style>
 
 <div class="page-header">
     <h1>{{ transaction_type }} Transaction History</h1>
-    <a href="{{ url_for('inventory.inventory_dashboard') }}" class="btn-secondary">Back to Inventory</a>
+    <div class="header-group">
+        {% if can_download %}
+            {% if transaction_type == 'Incoming' %}
+                <a href="{{ url_for('inventory.download_incoming_history') }}" class="btn-secondary">Download Report</a>
+            {% else %}
+                <a href="{{ url_for('inventory.download_outgoing_history') }}" class="btn-secondary">Download Report</a>
+            {% endif %}
+        {% endif %}
+        <a href="{{ url_for('inventory.inventory_dashboard') }}" class="btn-secondary">Back to Dashboard</a>
+    </div>
 </div>
 
 <div class="card">

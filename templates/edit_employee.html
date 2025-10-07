@@ -27,6 +27,22 @@
 
 {% if is_awaiting_checkin %}
     <div class="card">
+        <h2>Update EMP ID (Required for Check-in)</h2>
+        <form method="POST" action="{{ url_for('staff_mgmt.edit_employee', emp_id=employee.emp_id) }}">
+            <input type="hidden" name="update_emp_id_btn" value="1">
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="new_emp_id">Current ID: <strong>{{ employee.emp_id }}</strong></label>
+                    <input type="text" id="new_emp_id" name="new_emp_id" placeholder="Enter Official EMP ID" required>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-success">Update EMP ID</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="card">
         <h2>Assign Room and Check-in</h2>
         <form method="POST" action="{{ url_for('staff_mgmt.edit_employee', emp_id=employee.emp_id) }}">
             <input type="hidden" name="checkin_btn" value="1">

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Accommodations & Rooms{% endblock %}
+
+{% block content %}
+<style>
+    .page-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        align-items: flex-start;
+    }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    .data-table th { background-color: #f9fafb; font-weight: 600; }
+    .actions { display: flex; gap: 10px; }
+    .actions a {
+        text-decoration: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.9rem;
+    }
+    .btn-add { background-color: #10b981; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; }
+    .btn-edit { background-color: #3b82f6; color: white; }
+    
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-secondary); }
+    .form-group input { 
+        width: 100%; 
+        padding: 10px; 
+        border: 1px solid var(--border-color); 
+        border-radius: 6px; 
+        box-sizing: border-box; 
+    }
+    .btn-secondary { background-color: #6c757d; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; }
+    .btn-danger { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; }
+</style>
+
+<h1>Manage Accommodations & Rooms</h1>
+
+<div class="page-grid">
+    <div class="card">
+        <h2>Add New Accommodation</h2>
+        <form method="POST" action="{{ url_for('staff_mgmt.locations') }}">
+            <input type="hidden" name="add_accommodation_btn" value="1">
+            <div class="form-group">
+                <label for="camp_name">New Accommodation Name (e.g., Al Saaja Camp A)</label>
+                <input type="text" id="camp_name" name="camp_name" required>
+            </div>
+            <button type="submit" class="btn-add">Add Accommodation</button>
+        </form>
+    </div>
+    
+    <div class="card">
+        <h2>Add Location Filter (Optional)</h2>
+        <form method="POST" action="{{ url_for('staff_mgmt.locations') }}">
+            <input type="hidden" name="add_location_filter_btn" value="1">
+            <div class="form-group">
+                <label for="location_name">New Location Name (e.g., INVENTORY)</label>
+                <input type="text" id="location_name" name="location_name" required>
+            </div>
+            <button type="submit" class="btn-secondary">Add Location Filter</button>
+        </form>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 30px;">
+    <h2>Accommodation Master List ({{ all_accommodations | length }})</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Accommodation Name</th>
+                <th>Room / Bed Count</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for acc in all_accommodations %}
+            <tr>
+                <td>{{ acc.name }}</td>
+                <td>{{ acc.vacant_beds }} vacant of {{ acc.total_beds }} beds</td>
+                <td>
+                    <div class="actions">
+                        <a href="{{ url_for('staff_mgmt.manage_rooms', camp_id=acc.id) }}" class="btn-edit">Manage Slots</a>
+                        <form action="{{ url_for('staff_mgmt.delete_location', camp_id=acc.id) }}" method="POST" onsubmit="return confirm('WARNING: Are you sure you want to delete this accommodation? This will delete the Camp record, but existing Employee records will remain.');">
+                            <button type="submit" class="btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3">No accommodations found. Add one above or upload data via Excel.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Existing Location Filters ({{ camps | length }})</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Location Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for camp in camps %}
+            <tr>
+                <td>{{ camp.location }}</td>
+                <td>
+                    <div class="actions">
+                        <a href="{{ url_for('staff_mgmt.edit_location', camp_id=camp.id) }}" class="btn-edit">Edit</a>
+                        <form action="{{ url_for('staff_mgmt.delete_location', camp_id=camp.id) }}" method="POST" onsubmit="return confirm('WARNING: Are you sure you want to delete this location filter?');">
+                            <button type="submit" class="btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

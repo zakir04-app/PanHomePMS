@@ -16,7 +16,11 @@ def inventory_dashboard():
     total_received_qty = db.session.query(func.sum(InventoryTransaction.quantity)).filter_by(type='Incoming').scalar() or 0
     total_distributed_qty = db.session.query(func.sum(InventoryTransaction.quantity)).filter_by(type='Outgoing').scalar() or 0
     current_stock = db.session.query(func.sum(InventoryItem.quantity)).scalar() or 0
-    return render_template('inventory_dashboard.html', items=items, total_received_qty=total_received_qty, total_distributed_qty=total_distributed_qty, current_stock=current_stock)
+    return render_template('inventory_dashboard.html', 
+                           items=items, 
+                           total_received_qty=total_received_qty, 
+                           total_distributed_qty=total_distributed_qty, 
+                           current_stock=current_stock)
 
 @inventory_bp.route('/add', methods=['GET', 'POST'])
 @login_required
@@ -187,30 +191,129 @@ def delete_transaction(transaction_id):
     
     return redirect(url_for('inventory.inventory_transactions', transaction_type='Outgoing'))
 
-@inventory_bp.route('/download_history')
+
+# --- NEW DEDICATED VIEW ROUTES ---
+
+@inventory_bp.route('/view/total_stock')
 @login_required
-def download_inventory_history():
+def view_total_stock():
+    # ENFORCEMENT: Requires INV_VIEW or INV_EDIT permission
+    if not current_user.can_access_feature('INV_VIEW'):
+        flash("Permission denied: You cannot view total stock records.", 'danger')
+        return redirect(url_for('inventory.inventory_dashboard'))
+    
+    items = InventoryItem.query.order_by(InventoryItem.name).all()
+    return render_template('inventory_total_stock.html', items=items, title="Current Stock List")
+
+@inventory_bp.route('/view/received')
+@login_required
+def view_received():
+    # ENFORCEMENT: Requires INV_VIEW or INV_EDIT permission
+    if not current_user.can_access_feature('INV_VIEW'):
+        flash("Permission denied: You cannot view received stock records.", 'danger')
+        return redirect(url_for('inventory.inventory_dashboard'))
+    
+    transactions = InventoryTransaction.query.filter_by(type='Incoming').order_by(InventoryTransaction.date.desc()).all()
+    return render_template('inventory_transactions.html', 
+                           transactions=transactions, 
+                           transaction_type="Incoming", 
+                           title="Total Received Stock History",
+                           can_download=current_user.can_access_feature('INV_VIEW'))
+
+@inventory_bp.route('/view/distributed')
+@login_required
+def view_distributed():
+    # ENFORCEMENT: Requires INV_VIEW or INV_EDIT permission
+    if not current_user.can_access_feature('INV_VIEW'):
+        flash("Permission denied: You cannot view distributed stock records.", 'danger')
+        return redirect(url_for('inventory.inventory_dashboard'))
+        
+    transactions = InventoryTransaction.query.filter_by(type='Outgoing').order_by(InventoryTransaction.date.desc()).all()
+    return render_template('inventory_transactions.html', 
+                           transactions=transactions, 
+                           transaction_type="Outgoing", 
+                           title="Total Distributed Stock History",
+                           can_download=current_user.can_access_feature('INV_VIEW'))
+
+
+# --- DEDICATED DOWNLOAD ROUTES (REUSED) ---
+
+@inventory_bp.route('/download/total_stock') # NEW DOWNLOAD ROUTE
+@login_required
+def download_total_stock():
     # ENFORCEMENT: Requires INV_VIEW or INV_EDIT permission
     if not current_user.can_access_feature('INV_VIEW'):
         flash("Permission denied: You cannot download inventory reports.", 'danger')
         return redirect(url_for('inventory.inventory_dashboard'))
 
-    transactions = InventoryTransaction.query.order_by(InventoryTransaction.date.desc()).all()
+    items = InventoryItem.query.order_by(InventoryItem.name).all()
     data = [{
-        'Date': tx.date, 'Type': tx.type, 'Item Name': tx.item_name, 'Quantity': tx.quantity,
-        'Supplier': tx.supplier_name, 'LPO Number': tx.lpo_number,
-        'Employee ID': tx.emp_id, 'Room Number': tx.room_number
-    } for tx in transactions]
+        'Item Name': item.name,
+        'Quantity in Stock': item.quantity
+    } for item in items]
     
     df = pd.DataFrame(data)
     buffer = io.BytesIO()
-    df.to_excel(buffer, index=False, sheet_name='Inventory History')
+    df.to_excel(buffer, index=False, sheet_name='Current Stock List')
     buffer.seek(0)
     
     return send_file(
         buffer,
         as_attachment=True,
-        download_name='full_inventory_history.xlsx',
+        download_name='current_stock_list.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+
+@inventory_bp.route('/download/incoming')
+@login_required
+def download_incoming_history():
+    # ENFORCEMENT: Requires INV_VIEW or INV_EDIT permission
+    if not current_user.can_access_feature('INV_VIEW'):
+        flash("Permission denied: You cannot download incoming reports.", 'danger')
+        return redirect(url_for('inventory.inventory_dashboard'))
+
+    transactions = InventoryTransaction.query.filter_by(type='Incoming').order_by(InventoryTransaction.date.desc()).all()
+    data = [{
+        'Date': tx.date, 'Item Name': tx.item_name, 'Quantity': tx.quantity,
+        'Supplier': tx.supplier_name, 'LPO Number': tx.lpo_number
+    } for tx in transactions]
+    
+    df = pd.DataFrame(data)
+    buffer = io.BytesIO()
+    df.to_excel(buffer, index=False, sheet_name='Incoming Stock History')
+    buffer.seek(0)
+    
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name='incoming_stock_history.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+@inventory_bp.route('/download/outgoing')
+@login_required
+def download_outgoing_history():
+    # ENFORCEMENT: Requires INV_VIEW or INV_EDIT permission
+    if not current_user.can_access_feature('INV_VIEW'):
+        flash("Permission denied: You cannot download distribution reports.", 'danger')
+        return redirect(url_for('inventory.inventory_dashboard'))
+
+    transactions = InventoryTransaction.query.filter_by(type='Outgoing').order_by(InventoryTransaction.date.desc()).all()
+    data = [{
+        'Date': tx.date, 'Item Name': tx.item_name, 'Quantity': tx.quantity,
+        'Employee ID': tx.emp_id, 'Room Number': tx.room_number
+    } for tx in transactions]
+    
+    df = pd.DataFrame(data)
+    buffer = io.BytesIO()
+    df.to_excel(buffer, index=False, sheet_name='Outgoing Stock History')
+    buffer.seek(0)
+    
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name='outgoing_stock_history.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
@@ -218,4 +321,10 @@ def download_inventory_history():
 @login_required
 def inventory_transactions(transaction_type):
     transactions = InventoryTransaction.query.filter_by(type=transaction_type.title()).order_by(InventoryTransaction.date.desc()).all()
-    return render_template('inventory_transactions.html', transactions=transactions, transaction_type=transaction_type.title())
+    
+    can_download = current_user.can_access_feature('INV_VIEW')
+    
+    return render_template('inventory_transactions.html', 
+                           transactions=transactions, 
+                           transaction_type=transaction_type.title(),
+                           can_download=can_download)

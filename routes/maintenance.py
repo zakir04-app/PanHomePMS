@@ -46,8 +46,7 @@ def maintenance_report():
         return redirect(url_for('maintenance.maintenance_report'))
 
     # --- GET Request Logic: Calculate Summary Statistics ---
-    all_reports = MaintenanceReport.query.all()
-    total_reports = len(all_reports)
+    total_reports = MaintenanceReport.query.count()
     total_open = MaintenanceReport.query.filter_by(status='Open').count()
     total_closed = MaintenanceReport.query.filter_by(status='Closed').count()
     
@@ -57,12 +56,82 @@ def maintenance_report():
                            reports=reports,
                            total_reports=total_reports,
                            total_open=total_open,
-                           total_closed=total_closed)
+                           total_closed=total_closed,
+                           is_dashboard=True) # Flag to control view
+
+@maintenance_bp.route('/view_list/<string:status_filter>')
+@login_required
+def view_maintenance_list(status_filter):
+    # ENFORCEMENT: All maintenance data is viewable by default (no specific check needed here)
+    
+    reports_query = MaintenanceReport.query
+    
+    if status_filter.lower() == 'open':
+        reports_query = reports_query.filter_by(status='Open')
+        title = "Open Maintenance Issues"
+    elif status_filter.lower() == 'closed':
+        reports_query = reports_query.filter_by(status='Closed')
+        title = "Closed Maintenance Issues"
+    else:
+        title = "All Maintenance Reports"
+
+    reports = reports_query.order_by(MaintenanceReport.report_date.desc()).all()
+    
+    return render_template('maintenance_list.html', 
+                           reports=reports,
+                           title=title,
+                           current_filter=status_filter)
+
+@maintenance_bp.route('/download/filtered/<string:status_filter>')
+@login_required
+def download_filtered_report(status_filter):
+    # ENFORCEMENT: Requires explicit Admin permission or a dedicated 'MAINT_VIEW' permission
+    if not current_user.is_admin():
+         flash("Permission denied: Only administrators can download filtered reports.", 'danger')
+         return redirect(url_for('maintenance.maintenance_report'))
+         
+    reports_query = MaintenanceReport.query
+    
+    if status_filter.lower() == 'open':
+        reports_query = reports_query.filter_by(status='Open')
+        filename = 'open_maintenance_reports.xlsx'
+    elif status_filter.lower() == 'closed':
+        reports_query = reports_query.filter_by(status='Closed')
+        filename = 'closed_maintenance_reports.xlsx'
+    else:
+        filename = 'all_maintenance_reports.xlsx'
+    
+    reports = reports_query.order_by(MaintenanceReport.report_date.desc()).all()
+    
+    data = [{
+        'Block': r.block,
+        'Section': r.section,
+        'Report Date': r.report_date,
+        'Closed Date': r.closed_date, 
+        'Details': r.details,
+        'Status': r.status,
+        'Concern': r.concern,
+        'Risk Level': r.risk,
+        'Remarks': r.remarks
+    } for r in reports]
+    df = pd.DataFrame(data)
+    
+    buffer = io.BytesIO()
+    df.to_excel(buffer, index=False, sheet_name=status_filter.title() + ' Reports')
+    buffer.seek(0)
+    
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
 
 
 @maintenance_bp.route('/download/report')
 @login_required
 def download_maintenance_report():
+    # This route downloads ALL reports (reused for convenience)
     reports = MaintenanceReport.query.order_by(MaintenanceReport.report_date.desc()).all()
     data = [{
         'Block': r.block,

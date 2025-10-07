@@ -119,7 +119,8 @@
 <script>
     // Ensure the data passed from the backend is available
     const filterOptions = {
-        accommodation: {{ accommodations | tojson | safe }},
+        // Accommodations list needs to be updated to match the format of locations/statuses if different
+        accommodation: {{ accommodations | tojson | safe }}, 
         location: {{ locations | tojson | safe }},
         status: {{ statuses | tojson | safe }},
         nationality: {{ nationalities | tojson | safe }}
@@ -145,9 +146,10 @@
             valueSelect.add(new Option('-- Select Value --', ''));
 
             if (selectedType === 'accommodation') {
-                 // Accommodation expects objects with a 'name' property
+                 // The backend now returns a list of strings for accommodations/locations/statuses
                  options.forEach(function(item) {
-                    valueSelect.add(new Option(item.name, item.name));
+                    // Assuming accommodations is now a list of strings (e.g., ['A', 'B'])
+                    valueSelect.add(new Option(item, item)); 
                 });
             } else {
                 // Other options (location, status, nationality) expect simple string lists
@@ -160,5 +162,13 @@
             valueSelect.add(new Option('-- Select Filter First --', ''));
         }
     });
+    
+    // Initial check for 'All Records' option which doesn't need value
+    if(typeSelect.value === 'all') {
+        valueSelect.add(new Option('N/A (All Records)', 'all'));
+    }
+    
+    // Ensure event listener runs when the page loads with a pre-selected filter (if any)
+    typeSelect.dispatchEvent(new Event('change'));
 </script>
 {% endblock %}

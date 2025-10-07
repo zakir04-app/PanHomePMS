@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<style>
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .btn-secondary { background-color: #6c757d; color: white; padding: 10px 18px; text-decoration: none; border-radius: 6px; font-weight: 500; }
+    .header-actions { display: flex; gap: 10px; }
+    
+    .data-table-wrapper { max-height: 70vh; overflow-y: auto; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    .data-table th { background-color: #f9fafb; font-weight: 600; position: sticky; top: 0; z-index: 1; }
+</style>
+
+<div class="page-header">
+    <h1>{{ title }} ({{ reports | length }})</h1>
+    <div class="header-actions">
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('maintenance.download_filtered_report', status_filter=current_filter) }}" class="btn-secondary">Download List</a>
+        {% endif %}
+        <a href="{{ url_for('maintenance.maintenance_report') }}" class="btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="data-table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Block</th>
+                    <th>Section</th>
+                    <th>Details</th>
+                    <th>Status</th>
+                    <th>Concern</th>
+                    <th>Risk</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td>{{ report.report_date }}</td>
+                    <td>{{ report.block }}</td>
+                    <td>{{ report.section }}</td>
+                    <td>{{ report.details[:80] }}{% if report.details|length > 80 %}...{% endif %}</td>
+                    <td>{{ report.status }}</td>
+                    <td>{{ report.concern or '-' }}</td>
+                    <td>{{ report.risk or '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('maintenance.view_maintenance_report', report_id=report.id) }}">View</a> 
+                        {% if current_user.can_access_feature('MAINT_EDIT') %}
+                        | <a href="{{ url_for('maintenance.edit_maintenance', report_id=report.id) }}">Edit</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 20px;">No records found for this filter.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

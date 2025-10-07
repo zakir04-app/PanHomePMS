@@ -110,15 +110,19 @@ class MaintenanceReport(db.Model):
 
 class AMCsService(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    service_id = db.Column(db.String(50))
+    # service_id is REMOVED
     date = db.Column(db.String(50))
     description = db.Column(db.String(500))
     supplier_name = db.Column(db.String(100))
-    start_date = db.Column(db.String(50))
-    end_date = db.Column(db.String(50))
+    inspection_date = db.Column(db.String(50))
+    expiry_date = db.Column(db.String(50))
     cost = db.Column(db.Float)
     type = db.Column(db.String(100))
     remarks = db.Column(db.String(255))
     duration = db.Column(db.String(50))
     remaining_days = db.Column(db.Integer)
     attached_file = db.Column(db.String(255))
+class AMCsSupplier(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    contact = db.Column(db.String(100))

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Slots: {{ camp.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .room-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; }
+    .btn-add { background-color: #10b981; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; }
+    .btn-remove { background-color: #ef4444; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; }
+    
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .summary-card { padding: 15px; border-left: 5px solid var(--accent-color); background-color: var(--card-bg); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { padding: 10px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    .data-table th { background-color: #f9fafb; font-weight: 600; }
+    
+    .status-active { color: #16a34a; font-weight: 600; }
+    .status-vacant { color: #6c757d; font-weight: 600; }
+</style>
+
+<div class="page-header">
+    <h1>Room Management for: {{ camp.name }}</h1>
+    <a href="{{ url_for('staff_mgmt.locations') }}" class="btn-secondary">Back to Accommodations</a>
+</div>
+
+<div class="card summary-grid">
+    <div class="summary-card" style="border-left-color: #3b82f6;">
+        <h3>Total Beds</h3>
+        <p style="font-size: 1.5rem; font-weight: 700;">{{ occupied_count + vacant_count }}</p>
+    </div>
+    <div class="summary-card" style="border-left-color: #10b981;">
+        <h3>Occupied</h3>
+        <p style="font-size: 1.5rem; font-weight: 700;">{{ occupied_count }}</p>
+    </div>
+    <div class="summary-card" style="border-left-color: #ffc107;">
+        <h3>Vacant Slots</h3>
+        <p style="font-size: 1.5rem; font-weight: 700;">{{ vacant_count }}</p>
+    </div>
+</div>
+
+<div class="room-actions">
+    <div class="card">
+        <h3>Add Vacant Rooms/Slots</h3>
+        <form method="POST" action="{{ url_for('staff_mgmt.manage_rooms', camp_id=camp.id) }}">
+            <input type="hidden" name="action" value="add">
+            <div class="form-group">
+                <label for="add_room_number">Room Number (e.g., AF01)</label>
+                <input type="text" id="add_room_number" name="room_number" required>
+            </div>
+            <div class="form-group">
+                <label for="add_num_beds">Number of Slots to Add (1-10)</label>
+                <input type="number" id="add_num_beds" name="num_beds" min="1" max="10" value="1" required>
+            </div>
+            <button type="submit" class="btn-add">Add Vacant Slot(s)</button>
+        </form>
+    </div>
+    
+    <div class="card">
+        <h3>Remove Vacant Slots</h3>
+        <form method="POST" action="{{ url_for('staff_mgmt.manage_rooms', camp_id=camp.id) }}" onsubmit="return confirm('WARNING: Are you sure you want to remove these vacant slots?');">
+            <input type="hidden" name="action" value="remove">
+            <div class="form-group">
+                <label for="remove_room_number">Room Number to Target</label>
+                <input type="text" id="remove_room_number" name="room_number" required>
+            </div>
+            <div class="form-group">
+                <label for="remove_num_beds">Number of Vacant Slots to Remove</label>
+                <input type="number" id="remove_num_beds" name="num_beds" min="1" value="1" required>
+            </div>
+            <button type="submit" class="btn-remove">Remove Slot(s)</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Room Status Summary</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Room No.</th>
+                <th>Total Slots</th>
+                <th>Occupied</th>
+                <th>Vacant</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for room in room_summary %}
+            <tr>
+                <td>{{ room.room }}</td>
+                <td>{{ room.total_slots }}</td>
+                <td class="status-active">{{ room.occupied_slots }}</td>
+                <td class="status-vacant">{{ room.vacant_slots }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">No rooms defined for this accommodation.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

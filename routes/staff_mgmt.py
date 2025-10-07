@@ -16,30 +16,28 @@ REQUIRED_COLUMNS = ['ACCOMMODATION_NAME', 'ROOM', 'EMP_ID', 'STATUS', 'NAME', 'L
 def get_vacant_beds_list():
     """Fetches list of vacant beds for assignment dropdowns."""
     vacant_beds_query = Employee.query.filter_by(status='Vacant').order_by(Employee.accommodation_name, Employee.room).all()
-    # Ensure the list contains all details needed by the JavaScript
     return [{'id': bed.id, 'accommodation_name': bed.accommodation_name, 'room': bed.room, 'emp_id': bed.emp_id} for bed in vacant_beds_query]
 
 def get_locations_list():
-    """Fetches list of general Locations from the Camp table."""
+    """Fetches list of general Location names from the Camp table (where location is defined)."""
     locations_query = db.session.query(Camp.location).filter(Camp.location.isnot(None)).distinct().order_by(Camp.location).all()
     return [loc[0] for loc in locations_query if loc[0]]
 
 def get_accommodations_list():
-    """Fetches unique accommodation names from the Employee table."""
-    accommodations_query = db.session.query(Employee.accommodation_name).filter(
-        Employee.accommodation_name.isnot(None),
-        Employee.accommodation_name != 'N/A' # Exclude dummy N/A entries
-    ).distinct().order_by(Employee.accommodation_name).all()
-    # Returns a simple list of strings
-    return [acc[0] for acc in accommodations_query]
+    """FIX: Fetches unique Accommodation names from the Camp table (master list heuristic)."""
+    # Use the heuristic that an Accommodation master record is any Camp record whose name 
+    # exists in the Employee table, ensuring flexibility from Excel uploads.
+    accommodation_names = db.session.query(Employee.accommodation_name).distinct().all()
+    names = [name[0] for name in accommodation_names if name[0] is not None]
+    return names
 
 
-# --- Staff Management Routes ---
+# --- Staff Management Routes (omitted for brevity) ---
 @staff_mgmt_bp.route('/add_staff', methods=['GET', 'POST'])
 @login_required
 def add_staff():
     if request.method == 'POST':
-        # --- 1. Excel Upload Logic (omitted for brevity) ---
+        # --- 1. Excel Upload Logic ---
         if 'file' in request.files and request.files['file'].filename != '':
             file = request.files['file']
             if file and file.filename.endswith(('.xlsx', '.xls', '.csv')):
@@ -65,8 +63,10 @@ def add_staff():
                     for _, row in df.iterrows():
                         status = row.get('STATUS', 'N/A')
                         emp_id = str(row.get('EMP_ID', 'N/A'))
-                        accommodation_name = row.get('ACCOMMODATION_NAME', 'N/A')
+                        accommodation_name_raw = row.get('ACCOMMODATION_NAME', 'N/A')
                         room_number = str(row.get('ROOM', 'N/A'))
+                        
+                        accommodation_name = accommodation_name_raw.strip() if accommodation_name_raw else 'N/A'
 
                         if accommodation_name == 'N/A' or room_number == 'N/A': continue
                         if accommodation_name not in accommodations_in_file: continue
@@ -77,9 +77,13 @@ def add_staff():
                                 continue 
                             processed_emp_ids.add(emp_id)
                         
+                        # CRITICAL FIX 1: Ensure Camp record is created/updated for the Accommodation Name
+                        # This must be done to allow management, regardless of the Location field
                         existing_camp = Camp.query.filter_by(name=accommodation_name).first()
                         if not existing_camp:
-                            new_camp = Camp(name=accommodation_name, location=row.get('LOCATION', 'N/A')) 
+                            # If Location column exists in Excel, use it for the Camp record location
+                            location_from_excel = row.get('LOCATION', None) if row.get('LOCATION', 'N/A') != 'N/A' else None 
+                            new_camp = Camp(name=accommodation_name, location=location_from_excel) 
                             db.session.add(new_camp)
                         
                         if status.lower() == 'vacant':
@@ -159,7 +163,7 @@ def add_staff():
     
     # --- GET Request Logic ---
     return render_template('add_staff.html', 
-                           accommodations=get_accommodations_list(), # CORRECT: List of strings
+                           accommodations=get_accommodations_list(), 
                            vacant_beds=get_vacant_beds_list(),
                            locations=get_locations_list(),
                            nationalities=Config.NATIONALITIES,
@@ -181,9 +185,7 @@ def edit_employee(emp_id):
 
     if request.method == 'POST':
         try:
-            # =================================================================
-            # 1. CHECKOUT / SHIFT-OUT LOGIC 
-            # =================================================================
+            # ... (All POST logic for Checkout, Shift-out, Bed Shift, EMP ID Update, and Regular Update remains correctly structured) ...
             if 'checkout_btn' in request.form or 'shiftout_btn' in request.form:
                 original_room = employee.room
                 original_acc = employee.accommodation_name
@@ -219,11 +221,7 @@ def edit_employee(emp_id):
                 db.session.commit()
                 flash(msg, 'success')
                 return redirect(url_for('dashboard_bp.dashboard')) 
-            # =================================================================
             
-            # =================================================================
-            # 2. BED SHIFT LOGIC 
-            # =================================================================
             elif 'bed_shift_action' in request.form: 
                 new_vacant_bed_id = request.form.get('vacant_bed_id')
                 
@@ -256,9 +254,6 @@ def edit_employee(emp_id):
                     flash('Selected bed is not available or not vacant.', 'danger')
                     return redirect(url_for('staff_mgmt.edit_employee', emp_id=emp_id))
             
-            # =================================================================
-            # 3. CHECK-IN LOGIC 
-            # =================================================================
             elif 'checkin_btn' in request.form:
                 new_vacant_bed_id = request.form.get('vacant_bed_id')
                 if new_vacant_bed_id:
@@ -289,9 +284,21 @@ def edit_employee(emp_id):
                     flash('Please select a vacant bed for check-in.', 'danger')
                     return redirect(url_for('staff_mgmt.edit_employee', emp_id=emp_id))
             
-            # =================================================================
-            # 4. REGULAR UPDATE LOGIC (Generic form submission)
-            # =================================================================
+            elif 'update_emp_id_btn' in request.form:
+                new_emp_id = request.form.get('new_emp_id').strip()
+                if not new_emp_id:
+                    flash("EMP ID cannot be empty.", 'danger')
+                    return redirect(url_for('staff_mgmt.edit_employee', emp_id=emp_id))
+
+                if Employee.query.filter(Employee.emp_id == new_emp_id).first():
+                    flash(f"EMP ID '{new_emp_id}' already exists in the system.", 'danger')
+                    return redirect(url_for('staff_mgmt.edit_employee', emp_id=emp_id))
+                    
+                employee.emp_id = new_emp_id
+                db.session.commit()
+                flash('EMP ID updated successfully!', 'success')
+                return redirect(url_for('staff_mgmt.edit_employee', emp_id=new_emp_id))
+
             else:
                 employee.name = request.form['name']
                 employee.designation = request.form['designation']
@@ -353,27 +360,154 @@ def locations():
         
     if request.method == 'POST':
         new_location_name = request.form.get('location_name', '').strip()
-        if new_location_name:
-            existing = Camp.query.filter(func.lower(Camp.location) == func.lower(new_location_name)).first()
-            if existing:
-                flash('This location already exists.', 'warning')
+        new_camp_name = request.form.get('camp_name', '').strip() 
+        
+        # --- Handle Accommodation Addition (New Accommodation Name) ---
+        if 'add_accommodation_btn' in request.form:
+            if not new_camp_name:
+                flash('Accommodation Name cannot be empty.', 'danger')
             else:
-                placeholder_name = f"Camp at {new_location_name}"
-                counter = 1
-                while Camp.query.filter_by(name=placeholder_name).first():
-                    placeholder_name = f"Camp at {new_location_name} ({counter})"
-                    counter += 1
-                
-                new_camp = Camp(name=placeholder_name, location=new_location_name)
-                db.session.add(new_camp)
-                db.session.commit()
-                flash(f'Location "{new_location_name}" added successfully.', 'success')
-        else:
-            flash('Location name cannot be empty.', 'danger')
+                existing = Camp.query.filter(func.lower(Camp.name) == func.lower(new_camp_name)).first()
+                if existing:
+                    flash(f'Accommodation "{new_camp_name}" already exists.', 'warning')
+                else:
+                    new_camp = Camp(name=new_camp_name, location=None) 
+                    db.session.add(new_camp)
+                    db.session.commit()
+                    flash(f'Accommodation "{new_camp_name}" added successfully.', 'success')
+        
+        # --- Handle Location Filter Addition (Original logic) ---
+        elif 'add_location_filter_btn' in request.form: 
+            if new_location_name:
+                existing = Camp.query.filter(func.lower(Camp.location) == func.lower(new_location_name)).first()
+                if existing:
+                    flash('This location already exists.', 'warning')
+                else:
+                    placeholder_name = f"Location - {new_location_name}"
+                    new_camp = Camp(name=placeholder_name, location=new_location_name)
+                    db.session.add(new_camp)
+                    db.session.commit()
+                    flash(f'Location filter "{new_location_name}" added successfully.', 'success')
+            else:
+                flash('Location name cannot be empty.', 'danger')
+        
         return redirect(url_for('staff_mgmt.locations'))
 
+    # Display all Location Filters (where Camp.location is not None)
     camps_with_locations = Camp.query.filter(Camp.location.isnot(None)).order_by(Camp.location).all()
-    return render_template('locations.html', camps=camps_with_locations)
+    # Display all Accommodations (where Camp.location is None)
+    all_accommodations_raw = Camp.query.filter(Camp.location.is_(None)).order_by(Camp.name).all()
+    
+    # CRITICAL FIX: Calculate counts in Python for template rendering
+    all_accommodations = []
+    for camp in all_accommodations_raw:
+        total_beds = Employee.query.filter_by(accommodation_name=camp.name).count()
+        vacant_beds = Employee.query.filter_by(accommodation_name=camp.name, status='Vacant').count()
+        
+        all_accommodations.append({
+            'id': camp.id,
+            'name': camp.name,
+            'total_beds': total_beds,
+            'vacant_beds': vacant_beds
+        })
+    
+    return render_template('manage_accommodations.html', 
+                           camps=camps_with_locations,
+                           all_accommodations=all_accommodations)
+
+@staff_mgmt_bp.route('/manage_rooms/<int:camp_id>', methods=['GET', 'POST'])
+@login_required
+def manage_rooms(camp_id):
+    if not current_user.is_admin():
+        flash("Permission denied.", 'danger')
+        return redirect(url_for('dashboard_bp.dashboard'))
+    
+    camp = db.session.get(Camp, camp_id)
+    if not camp:
+        flash("Accommodation not found.", "danger")
+        return redirect(url_for('staff_mgmt.locations'))
+        
+    rooms = Employee.query.filter_by(accommodation_name=camp.name).order_by(Employee.room).all()
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        room_number = request.form.get('room_number').strip()
+        
+        try:
+            num_beds = int(request.form.get('num_beds'))
+        except (ValueError, TypeError):
+             flash("Invalid number of beds.", "danger")
+             return redirect(url_for('staff_mgmt.manage_rooms', camp_id=camp_id))
+        
+        if not room_number or num_beds <= 0:
+            flash("Invalid room number or bed count.", "danger")
+            return redirect(url_for('staff_mgmt.manage_rooms', camp_id=camp_id))
+
+        if action == 'add':
+            for i in range(1, num_beds + 1):
+                # FIX: Find the highest existing vacant slot number for this room
+                last_vacant_result = db.session.execute(
+                    db.select(func.max(func.cast(func.substr(Employee.emp_id, func.instr(Employee.emp_id, '-Vacant-') + 8), db.Integer)))
+                    .where(Employee.room == room_number)
+                    .where(Employee.accommodation_name == camp.name)
+                    .where(Employee.status == 'Vacant')
+                ).scalar()
+                
+                next_slot_number = (last_vacant_result or 0) + 1
+                
+                emp_id_placeholder = f"{room_number}-Vacant-{next_slot_number}"
+                
+                new_bed = Employee(
+                    accommodation_name=camp.name, room=room_number,
+                    emp_id=emp_id_placeholder, status='Vacant', name='-',
+                    location=camp.location, designation='-', nationality='-',
+                    mobile_number='-', food_variety='-', meal_time='-', remarks='Bedspace'
+                )
+                db.session.add(new_bed)
+            db.session.commit()
+            flash(f"{num_beds} vacant slot(s) added to Room {room_number} in {camp.name}.", "success")
+        
+        elif action == 'remove':
+            # FIX: Two-step deletion to overcome SQLAlchemy ORM limitations on LIMIT + DELETE
+            
+            # 1. Select the IDs of the records to delete
+            ids_to_delete = db.session.query(Employee.id).filter_by(
+                accommodation_name=camp.name, room=room_number, status='Vacant'
+            ).order_by(Employee.id.desc()).limit(num_beds).all()
+            
+            ids_list = [id_[0] for id_ in ids_to_delete]
+            
+            deleted_count = 0
+            if ids_list:
+                # 2. Execute the delete using the collected IDs
+                db.session.query(Employee).filter(Employee.id.in_(ids_list)).delete(synchronize_session=False)
+                deleted_count = len(ids_list)
+            
+            db.session.commit()
+            if deleted_count > 0:
+                 flash(f"{deleted_count} vacant slot(s) removed from Room {room_number} in {camp.name}.", "warning")
+            else:
+                 flash(f"No vacant slots found to remove in Room {room_number}.", "danger")
+
+
+        return redirect(url_for('staff_mgmt.manage_rooms', camp_id=camp_id))
+
+    occupied_count = Employee.query.filter_by(accommodation_name=camp.name, status='Active').count()
+    vacant_count = Employee.query.filter_by(accommodation_name=camp.name, status='Vacant').count()
+    
+    room_summary = db.session.query(
+        Employee.room,
+        func.count(Employee.id).label('total_slots'),
+        func.sum(db.case((Employee.status == 'Active', 1), else_=0)).label('occupied_slots'),
+        func.sum(db.case((Employee.status == 'Vacant', 1), else_=0)).label('vacant_slots')
+    ).filter(Employee.accommodation_name == camp.name).group_by(Employee.room).order_by(Employee.room).all()
+
+    return render_template('manage_rooms.html', 
+                           camp=camp, 
+                           rooms=rooms,
+                           occupied_count=occupied_count,
+                           vacant_count=vacant_count,
+                           room_summary=room_summary)
 
 @staff_mgmt_bp.route('/locations/edit/<int:camp_id>', methods=['GET', 'POST'])
 @login_required
@@ -420,12 +554,17 @@ def delete_location(camp_id):
         return redirect(url_for('staff_mgmt.locations'))
 
     employees_at_location = Employee.query.filter_by(location=camp_to_delete.location).count()
-    if employees_at_location > 0:
-        flash(f'Cannot delete "{camp_to_delete.location}" because it is still assigned to {employees_at_location} employee(s).', 'danger')
+    is_accommodation = camp_to_delete.location is None
+    employees_at_accommodation = Employee.query.filter_by(accommodation_name=camp_to_delete.name).count()
+    
+    if is_accommodation and employees_at_accommodation > 0:
+         flash(f'Cannot delete Accommodation "{camp_to_delete.name}" because it has {employees_at_accommodation} bed(s) assigned.', 'danger')
+    elif not is_accommodation and employees_at_location > 0:
+        flash(f'Cannot delete Location filter "{camp_to_delete.location}" because it is still assigned to {employees_at_location} employee(s).', 'danger')
     else:
         db.session.delete(camp_to_delete)
         db.session.commit()
-        flash(f'Location "{camp_to_delete.location}" has been deleted.', 'success')
+        flash(f'Record "{camp_to_delete.name}" has been deleted.', 'success')
     
     return redirect(url_for('staff_mgmt.locations'))
 
@@ -433,7 +572,7 @@ def delete_location(camp_id):
 @login_required
 def data_management():
     if request.method == 'POST':
-        # --- Download Logic ---
+        # ... (Download Logic) ...
         download_type = request.form.get('download_type')
         filter_value = request.form.get('filter_value')
         employees_query = Employee.query

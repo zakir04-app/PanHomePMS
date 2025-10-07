@@ -10,17 +10,19 @@ from sqlalchemy import func
 @settings_bp.route('/', methods=['GET'])
 @login_required
 def settings_dashboard():
-    # Admin must hit this route to see the full panel
     if not current_user.is_admin():
         return redirect(url_for('settings.change_appearance_view'))
 
     users = AppUser.query.all()
     
-    # FIX: is_appearance_only=False ensures the template renders the User Management table.
+    # FIX: Passing config data
     return render_template('settings.html', 
                            users=users, 
                            roles=Config.USER_ROLES, 
-                           is_appearance_only=False)
+                           is_appearance_only=False,
+                           theme_options=Config.THEME_OPTIONS,
+                           font_styles=Config.FONT_STYLES,
+                           font_sizes=Config.FONT_SIZES)
 
 @settings_bp.route('/appearance', methods=['GET', 'POST'])
 @login_required
@@ -31,21 +33,27 @@ def change_appearance_view():
         font_style = request.form.get('font_style')
         font_size = request.form.get('font_size')
         user = db.session.get(AppUser, current_user.id)
-        if theme in ['default', 'dark', 'light', 'blue', 'ocean', 'skyblue', 'darkgreen', 'darkgold']:
+        
+        # Check against Config lists for validation
+        if theme in Config.THEME_OPTIONS:
             user.theme = theme
-        if font_style in ['inter', 'poppins', 'roboto-slab']:
+        if font_style in Config.FONT_STYLES:
             user.font_style = font_style
-        if font_size in ['small', 'normal', 'large']:
+        if font_size in Config.FONT_SIZES:
             user.font_size = font_size
+            
         db.session.commit()
         flash('Appearance settings updated successfully!', 'success')
         return redirect(url_for('settings.change_appearance_view'))
     
-    # Renders the appearance section for all users.
+    # FIX: Passing config data
     return render_template('settings.html', 
                            is_appearance_only=True, 
                            roles=Config.USER_ROLES,
-                           users=None) 
+                           users=None,
+                           theme_options=Config.THEME_OPTIONS,
+                           font_styles=Config.FONT_STYLES,
+                           font_sizes=Config.FONT_SIZES) 
 
 @settings_bp.route('/add_user', methods=['GET', 'POST'])
 @login_required
